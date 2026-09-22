@@ -98,7 +98,7 @@ const extractLaunchUrl = (responseData) => {
   );
 };
 
-router.post("/playgame", requireAuth, async (req, res) => {
+const launchGame = async (req, res) => {
   try {
     const { gameID, game_uid, gameId } = req.body || {};
     const gameUId = String(game_uid || gameID || gameId || "").trim();
@@ -196,6 +196,12 @@ router.post("/playgame", requireAuth, async (req, res) => {
       error: error.response?.data || error.message,
     });
   }
-});
+};
+
+// Existing route retained for backward compatibility.
+router.post("/playgame", requireAuth, launchGame);
+
+// Compatibility route used by the client game launcher.
+router.post("/launch", requireAuth, launchGame);
 
 export default router;

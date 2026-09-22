@@ -154,6 +154,8 @@ app.use("/api/hot-games", hotGameRoutes);
 
 // game Play system
 app.use("/api/play-game", playGameRoutes);
+// Compatibility prefix for the client game launcher.
+app.use("/api/game", playGameRoutes);
 app.use("/api/callback", callbackRoutes);
 app.use("/api/game-history", gameHistoryRoutes);
 
