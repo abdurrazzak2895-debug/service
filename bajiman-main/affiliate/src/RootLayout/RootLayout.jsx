@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 
 import Navber from "../components/Navber/Navber";
 import Footer from "../components/Footer/Footer";
-import { useLanguage } from "../context/LanguageProvider";
+import { useLanguage } from "../Context/LanguageProvider";
 
 import { fetchAffiliateGlobalData } from "../features/global/globalSlice";
 import {

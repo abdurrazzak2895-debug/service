@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { selectSiteIdentify } from "../../features/global/globalSelectors";
-import { useLanguage } from "../../context/LanguageProvider";
+import { useLanguage } from "../../Context/LanguageProvider";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
