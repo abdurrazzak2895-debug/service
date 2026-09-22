@@ -29,6 +29,12 @@ const GameSchema = new mongoose.Schema(
       index: true,
     },
 
+    name: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+
     image: {
       type: String,
       default: "",

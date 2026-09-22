@@ -115,6 +115,7 @@ const upsertGame = async (categoryId, providerDbId, item) => {
         categoryId,
         providerDbId,
         gameUId: item.gameUId,
+        name: item.name,
         image: item.image,
         status: "active",
         syncStatus: "synced",
