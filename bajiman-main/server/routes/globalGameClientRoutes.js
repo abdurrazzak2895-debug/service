@@ -48,7 +48,9 @@ const fetchOracleGamesByProvider = async (providerCode = "") => {
       headers: {
         "x-oraclegamedata-key": ORACLE_GAME_DATA_KEY,
       },
-      timeout: 30000,
+      // Keep the initial catalog response within Vercel's serverless window.
+      // The local game record and image remain usable when Oracle is slow.
+      timeout: 5000,
     });
 
     const rawGames = Array.isArray(res?.data?.games) ? res.data.games : [];
