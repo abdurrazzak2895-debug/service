@@ -27,7 +27,7 @@ const defaultField = () => ({
   required: true,
 });
 
-const API_URL = import.meta.env.VITE_API_URL || "";
+const API_URL = "" || "";
 
 const cardCls =
   "rounded-[28px] border border-[#1A79D3]/20 bg-white/[0.07] shadow-2xl shadow-black/50 backdrop-blur-xl";

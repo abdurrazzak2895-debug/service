@@ -17,7 +17,7 @@ import {
 import { toast } from "react-toastify";
 import { api } from "../../api/axios";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = "";
 const ORACLE_PROVIDER_API = "https://oraclegames.net/api/providerlist";
 const ORACLE_PROVIDER_KEY = import.meta.env.VITE_ORACLE_GAME_DATA_KEY || "";
 

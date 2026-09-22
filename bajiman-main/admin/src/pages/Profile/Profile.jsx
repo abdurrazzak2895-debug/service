@@ -13,7 +13,7 @@ import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 
 import { api } from "../../api/axios";
-import { logout, setCredentials } from "../../features/auth/authSlice";
+import { logout } from "../../features/auth/authSlice";
 
 const Profile = () => {
   const dispatch = useDispatch();
@@ -45,10 +45,7 @@ const Profile = () => {
       setProfile(admin);
       setEmail(admin.email || "");
 
-      const token = localStorage.getItem("token");
-      if (token) {
-        dispatch(setCredentials({ admin, token }));
-      }
+      // The session JWT is held by the server in an HttpOnly cookie.
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to load profile");
     } finally {

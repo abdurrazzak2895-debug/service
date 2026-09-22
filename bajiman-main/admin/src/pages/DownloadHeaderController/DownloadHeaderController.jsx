@@ -10,7 +10,7 @@ const resolveUrl = (path = "") => {
   if (/^https?:\/\//i.test(path)) return path;
 
   const baseUrl = String(
-    import.meta.env.VITE_API_URL || api.defaults.baseURL || "",
+    "" || api.defaults.baseURL || "",
   ).replace(/\/+$/, "");
 
   return `${baseUrl}${path.startsWith("/") ? path : `/${path}`}`;

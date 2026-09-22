@@ -8,7 +8,6 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { toast } from "react-toastify";
@@ -60,7 +59,7 @@ const Login = () => {
         password,
       });
 
-      if (!data?.token || !data?.admin?.email) {
+      if (!data?.admin?.email) {
         toast.error("Login response invalid");
         return;
       }
@@ -68,7 +67,6 @@ const Login = () => {
       dispatch(
         setCredentials({
           admin: data.admin,
-          token: data.token,
         }),
       );
 

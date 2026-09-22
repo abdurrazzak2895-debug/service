@@ -126,7 +126,7 @@ const WheelOfFortuneReward = () => {
     }
 
     const baseUrl = String(
-      import.meta.env.VITE_API_URL || api.defaults.baseURL || "",
+      "" || api.defaults.baseURL || "",
     ).replace(/\/+$/, "");
 
     return `${baseUrl}${image.startsWith("/") ? image : `/${image}`}`;

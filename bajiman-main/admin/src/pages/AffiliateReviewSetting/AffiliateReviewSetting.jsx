@@ -22,7 +22,7 @@ import { Navigation, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = "";
 
 const localizedEmpty = { bn: "", en: "" };
 

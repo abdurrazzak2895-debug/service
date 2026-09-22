@@ -46,7 +46,7 @@ const btnDanger = `${btnBase} border border-red-500/30 bg-red-500/10 text-red-30
 const getImageUrl = (url) => {
   if (!url) return "";
   if (url.startsWith("http")) return url;
-  return `${import.meta.env.VITE_API_URL}${url}`;
+  return `${""}${url}`;
 };
 
 const BiInput = ({

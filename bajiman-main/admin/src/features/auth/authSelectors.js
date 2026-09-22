@@ -2,15 +2,12 @@ export const selectAuth = (state) => state.auth;
 
 export const selectAdmin = (state) => state.auth.admin;
 
-export const selectToken = (state) => state.auth.token;
+// Kept for compatibility with existing consumers; the real token is HttpOnly.
+export const selectToken = () => null;
 
 export const selectAuthLoading = (state) => state.auth.loading;
 
-export const selectIsAuthenticated = (state) => {
-  const { admin, token } = state.auth;
-
-  return !!token && !!admin?.email;
-};
+export const selectIsAuthenticated = (state) => !!state.auth.admin?.email;
 
 export const selectAdminRole = (state) => state.auth.admin?.role;
 

@@ -1,29 +1,17 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getAdminProfile } from "./authAPI";
+import { adminLogout, getAdminProfile } from "./authAPI";
 
 export const rehydrateAuth = createAsyncThunk(
   "auth/rehydrateAuth",
   async (_, { rejectWithValue }) => {
     try {
-      const storedAdmin = localStorage.getItem("admin");
-      const storedToken = localStorage.getItem("token");
-
-      if (!storedAdmin || !storedToken) {
-        return {
-          admin: null,
-          token: null,
-        };
-      }
-
-      return {
-        admin: JSON.parse(storedAdmin),
-        token: storedToken,
-      };
+      const { admin } = await getAdminProfile();
+      if (!admin?.email) throw new Error("No active admin session");
+      localStorage.setItem("admin", JSON.stringify(admin));
+      return { admin };
     } catch (error) {
       localStorage.removeItem("admin");
-      localStorage.removeItem("token");
-
-      return rejectWithValue("Auth restore failed");
+      return rejectWithValue(error?.response?.data?.message || "Auth restore failed");
     }
   },
 );
@@ -32,20 +20,26 @@ export const fetchAdminProfile = createAsyncThunk(
   "auth/fetchAdminProfile",
   async (_, { rejectWithValue }) => {
     try {
-      const data = await getAdminProfile();
-
-      return data.admin;
+      const { admin } = await getAdminProfile();
+      return admin;
     } catch (error) {
-      return rejectWithValue(
-        error?.response?.data?.message || "Profile load failed",
-      );
+      return rejectWithValue(error?.response?.data?.message || "Profile load failed");
     }
   },
 );
 
+export const logout = createAsyncThunk("auth/logout", async (_, { dispatch }) => {
+  dispatch(clearCredentials());
+  try {
+    await adminLogout();
+  } catch {
+    // The local session is cleared even if the network request fails.
+  }
+});
+
 const initialState = {
   admin: null,
-  token: localStorage.getItem("token") || null,
+  token: null,
   loading: true,
   error: null,
 };
@@ -55,32 +49,24 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (state, action) => {
-      const { admin, token } = action.payload;
-
+      const { admin } = action.payload;
       state.admin = admin;
-      state.token = token;
+      state.token = null;
       state.loading = false;
       state.error = null;
-
       localStorage.setItem("admin", JSON.stringify(admin));
-      localStorage.setItem("token", token);
     },
-
-    logout: (state) => {
+    clearCredentials: (state) => {
       state.admin = null;
       state.token = null;
       state.loading = false;
       state.error = null;
-
       localStorage.removeItem("admin");
-      localStorage.removeItem("token");
     },
-
     clearAuthError: (state) => {
       state.error = null;
     },
   },
-
   extraReducers: (builder) => {
     builder
       .addCase(rehydrateAuth.pending, (state) => {
@@ -88,7 +74,7 @@ const authSlice = createSlice({
       })
       .addCase(rehydrateAuth.fulfilled, (state, action) => {
         state.admin = action.payload.admin;
-        state.token = action.payload.token;
+        state.token = null;
         state.loading = false;
         state.error = null;
       })
@@ -98,15 +84,14 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload || "Auth restore failed";
       })
-
       .addCase(fetchAdminProfile.pending, (state) => {
         state.loading = true;
       })
       .addCase(fetchAdminProfile.fulfilled, (state, action) => {
         state.admin = action.payload;
+        state.token = null;
         state.loading = false;
         state.error = null;
-
         localStorage.setItem("admin", JSON.stringify(action.payload));
       })
       .addCase(fetchAdminProfile.rejected, (state, action) => {
@@ -114,13 +99,10 @@ const authSlice = createSlice({
         state.token = null;
         state.loading = false;
         state.error = action.payload || "Unauthorized";
-
         localStorage.removeItem("admin");
-        localStorage.removeItem("token");
       });
   },
 });
 
-export const { setCredentials, logout, clearAuthError } = authSlice.actions;
-
+export const { setCredentials, clearCredentials, clearAuthError } = authSlice.actions;
 export default authSlice.reducer;

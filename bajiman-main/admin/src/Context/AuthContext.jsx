@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 // context/AuthProvider.jsx
 import { createContext, useState, useEffect } from "react";
 
@@ -14,25 +15,23 @@ const DEMO_USER = {
 const AuthProvider = ({ children }) => {
   // 👇 null এর জায়গায় demo user
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState("demo-token");
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // ────────────────────────────────────────────────
-  // Load user & token from localStorage (if exists)
+  // This legacy context does not own the admin session. The Redux auth slice
+  // rehydrates the server-backed session through the HttpOnly cookie.
   // ────────────────────────────────────────────────
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("user");
-      const storedToken = localStorage.getItem("token");
 
-      if (storedUser && storedToken) {
+      if (storedUser) {
         setUser(JSON.parse(storedUser));
-        setToken(storedToken);
       }
     } catch (err) {
       console.error("Failed to load auth:", err);
       localStorage.removeItem("user");
-      localStorage.removeItem("token");
     } finally {
       setLoading(false);
     }

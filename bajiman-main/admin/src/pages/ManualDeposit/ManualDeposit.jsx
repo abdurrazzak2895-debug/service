@@ -32,7 +32,7 @@ const btnGhost = `${btnBase} border border-blue-300/20 bg-black/30 text-blue-100
 const getImageUrl = (url) => {
   if (!url) return "";
   if (url.startsWith("http")) return url;
-  return `${import.meta.env.VITE_API_URL}${url}`;
+  return `${""}${url}`;
 };
 
 const money = (value) => {

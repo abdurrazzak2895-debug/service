@@ -11,6 +11,9 @@ export const adminLogin = async ({ email, password }) => {
 
 export const getAdminProfile = async () => {
   const { data } = await api.get("/api/admin/profile");
-
   return data?.data || data;
+};
+
+export const adminLogout = async () => {
+  await api.post("/api/admin/logout");
 };
