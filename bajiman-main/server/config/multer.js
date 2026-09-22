@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 
 // ✅ ensure uploads folder exists
-const UPLOAD_DIR = "uploads";
+const UPLOAD_DIR = process.env.VERCEL === "1" ? "/tmp/bajiman-uploads" : "uploads";
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // ✅ allowed mime types

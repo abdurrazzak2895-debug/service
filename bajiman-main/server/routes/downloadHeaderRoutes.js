@@ -8,7 +8,7 @@ import { protectAdmin } from "../middleware/protectAdmin.js";
 
 const router = express.Router();
 
-const UPLOAD_DIR = "uploads";
+const UPLOAD_DIR = process.env.VERCEL === "1" ? "/tmp/bajiman-uploads" : "uploads";
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 // image ext + apk ext
