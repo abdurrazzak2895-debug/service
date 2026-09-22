@@ -1,0 +1,493 @@
+import React, { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  FaWallet,
+  FaCheckCircle,
+  FaClock,
+  FaTimesCircle,
+  FaSearch,
+  FaFilter,
+  FaSyncAlt,
+  FaChevronLeft,
+  FaChevronRight,
+  FaMoneyBillWave,
+} from "react-icons/fa";
+import { api } from "../../api/axios";
+
+const money = (value) => {
+  const num = Number(value || 0);
+  return `৳ ${num.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+const formatDate = (date) => {
+  if (!date) return "—";
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return "—";
+
+  return d.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const getStatusClass = (status = "") => {
+  const s = String(status).toLowerCase();
+
+  if (s === "approved") {
+    return "border-green-400/40 bg-green-500/15 text-green-300";
+  }
+
+  if (s === "rejected") {
+    return "border-red-400/40 bg-red-500/15 text-red-300";
+  }
+
+  return "border-yellow-400/40 bg-yellow-500/15 text-yellow-300";
+};
+
+const getFieldValue = (fields = {}, keys = []) => {
+  for (const key of keys) {
+    const value = fields?.[key];
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return value;
+    }
+  }
+
+  return "—";
+};
+
+const SummaryCard = ({ icon, label, count, amount, subText }) => {
+  return (
+    <div className="rounded-2xl border border-blue-300/20 bg-black/40 p-4 shadow-lg shadow-blue-900/10">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-blue-100/70">{label}</p>
+          <h3 className="mt-1 text-2xl font-black text-white">{count || 0}</h3>
+        </div>
+
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#63a8ee] to-[#2f79c9] text-white shadow-lg">
+          {icon}
+        </div>
+      </div>
+
+      <div className="mt-3 rounded-xl border border-blue-300/10 bg-black/35 px-3 py-2 text-sm font-bold text-[#8fc2f5]">
+        {money(amount)}
+      </div>
+
+      {subText ? (
+        <div className="mt-2 text-xs font-semibold text-blue-100/55">
+          {subText}
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
+const SingleUserManualDepositHistory = ({ userId }) => {
+  const [page, setPage] = useState(1);
+  const limit = 15;
+
+  const [status, setStatus] = useState("all");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+
+  const queryParams = useMemo(() => {
+    const params = new URLSearchParams();
+
+    params.set("page", String(page));
+    params.set("limit", String(limit));
+
+    if (status !== "all") params.set("status", status);
+    if (search.trim()) params.set("search", search.trim());
+
+    return params.toString();
+  }, [page, limit, status, search]);
+
+  const { data, isLoading, isFetching, refetch } = useQuery({
+    queryKey: [
+      "admin-single-user-manual-deposit-history",
+      userId,
+      page,
+      limit,
+      status,
+      search,
+    ],
+    queryFn: async () => {
+      const res = await api.get(
+        `/api/admin/manual-deposits/users/${userId}/manual-deposit-history?${queryParams}`,
+      );
+      return res.data;
+    },
+    enabled: !!userId,
+    keepPreviousData: true,
+    staleTime: 15000,
+    retry: 1,
+  });
+
+  const rows = Array.isArray(data?.data) ? data.data : [];
+  const summary = data?.summary || {};
+  const meta = data?.meta || {};
+  const totalPages = Math.max(Number(meta?.totalPages || 1), 1);
+
+  const handleSearch = () => {
+    setPage(1);
+    setSearch(searchInput.trim());
+  };
+
+  const handleReset = () => {
+    setPage(1);
+    setStatus("all");
+    setSearchInput("");
+    setSearch("");
+  };
+
+  return (
+    <div className="mt-6 text-white">
+      <div className="rounded-2xl border border-blue-300/20 bg-gradient-to-b from-black/95 via-[#2f79c9]/15 to-black/95 p-4 shadow-lg shadow-blue-900/20 md:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="flex items-center gap-2 text-xl font-bold text-[#8fc2f5] md:text-2xl">
+              <FaWallet />
+              Manual Deposit History
+            </h2>
+            <p className="mt-1 text-sm text-blue-100/70">
+              Single user deposit summary and request history
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-blue-300/20 bg-black/50 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-900/20"
+          >
+            <FaSyncAlt className={isFetching ? "animate-spin" : ""} />
+            Refresh
+          </button>
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <SummaryCard
+            icon={<FaMoneyBillWave />}
+            label="Total Deposit"
+            count={summary?.total?.count || 0}
+            amount={summary?.total?.amount || 0}
+            subText={`Bonus: ${money(summary?.total?.bonusAmount || 0)}`}
+          />
+
+          <SummaryCard
+            icon={<FaCheckCircle />}
+            label="Approved"
+            count={summary?.approved?.count || 0}
+            amount={summary?.approved?.amount || 0}
+            subText={`Credited: ${money(
+              summary?.approved?.creditedAmount || 0,
+            )}`}
+          />
+
+          <SummaryCard
+            icon={<FaClock />}
+            label="Pending"
+            count={summary?.pending?.count || 0}
+            amount={summary?.pending?.amount || 0}
+          />
+
+          <SummaryCard
+            icon={<FaTimesCircle />}
+            label="Rejected"
+            count={summary?.rejected?.count || 0}
+            amount={summary?.rejected?.amount || 0}
+          />
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_220px_auto_auto]">
+          <div>
+            <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-100">
+              <FaSearch />
+              Search
+            </label>
+
+            <input
+              type="text"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSearch();
+              }}
+              placeholder="Method / Channel / Sender / TrxID / Admin Note"
+              className="w-full rounded-xl border border-blue-300/20 bg-black/60 px-4 py-3 text-white placeholder-blue-100/40 outline-none focus:border-[#63a8ee] focus:ring-2 focus:ring-[#63a8ee]/30"
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 flex items-center gap-2 text-sm font-semibold text-blue-100">
+              <FaFilter />
+              Status
+            </label>
+
+            <select
+              value={status}
+              onChange={(e) => {
+                setPage(1);
+                setStatus(e.target.value);
+              }}
+              className="w-full cursor-pointer rounded-xl border border-blue-300/20 bg-black/60 px-4 py-3 text-white outline-none focus:border-[#63a8ee] focus:ring-2 focus:ring-[#63a8ee]/30"
+            >
+              <option className="bg-black" value="all">
+                All
+              </option>
+              <option className="bg-black" value="pending">
+                Pending
+              </option>
+              <option className="bg-black" value="approved">
+                Approved
+              </option>
+              <option className="bg-black" value="rejected">
+                Rejected
+              </option>
+            </select>
+          </div>
+
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={handleSearch}
+              className="h-[48px] w-full cursor-pointer rounded-xl bg-gradient-to-r from-[#63a8ee] to-[#2f79c9] px-5 text-sm font-bold text-white shadow-lg shadow-blue-700/30 hover:from-[#7ab6f2] hover:to-[#3c88db]"
+            >
+              Search
+            </button>
+          </div>
+
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={handleReset}
+              className="h-[48px] w-full cursor-pointer rounded-xl border border-blue-300/20 bg-black/50 px-5 text-sm font-bold text-white hover:bg-blue-900/20"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-6 overflow-hidden rounded-2xl border border-blue-300/20 bg-black/35">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1350px]">
+              <thead>
+                <tr className="border-b border-blue-300/20 bg-[#2f79c9]/40 text-left">
+                  <th className="px-4 py-4 text-sm font-black text-white">#</th>
+                  <th className="px-4 py-4 text-sm font-black text-white">
+                    Date
+                  </th>
+                  <th className="px-4 py-4 text-sm font-black text-white">
+                    Method
+                  </th>
+                  <th className="px-4 py-4 text-sm font-black text-white">
+                    Channel
+                  </th>
+                  <th className="px-4 py-4 text-sm font-black text-white">
+                    Sender
+                  </th>
+                  <th className="px-4 py-4 text-sm font-black text-white">
+                    TrxID
+                  </th>
+                  <th className="px-4 py-4 text-sm font-black text-white">
+                    Amount
+                  </th>
+                  <th className="px-4 py-4 text-sm font-black text-white">
+                    Bonus
+                  </th>
+                  <th className="px-4 py-4 text-sm font-black text-white">
+                    Credited
+                  </th>
+                  <th className="px-4 py-4 text-sm font-black text-white">
+                    Turnover
+                  </th>
+                  <th className="px-4 py-4 text-sm font-black text-white">
+                    Promo
+                  </th>
+                  <th className="px-4 py-4 text-sm font-black text-white">
+                    Admin Note
+                  </th>
+                  <th className="px-4 py-4 text-sm font-black text-white">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {isLoading ? (
+                  [...Array(6)].map((_, index) => (
+                    <tr key={index}>
+                      <td colSpan={13} className="px-4 py-4">
+                        <div className="h-12 animate-pulse rounded-xl bg-blue-300/10" />
+                      </td>
+                    </tr>
+                  ))
+                ) : rows.length ? (
+                  rows.map((item, index) => {
+                    const sender = getFieldValue(item.fields, [
+                      "senderNumber",
+                      "phone",
+                      "number",
+                      "from",
+                      "walletNumber",
+                    ]);
+
+                    const trxid = getFieldValue(item.fields, [
+                      "trxid",
+                      "trxId",
+                      "transactionId",
+                      "transaction_id",
+                      "ref",
+                    ]);
+
+                    const methodName =
+                      item?.display?.methodName?.en ||
+                      item?.display?.methodName?.bn ||
+                      item?.display?.methodName ||
+                      item?.methodId ||
+                      "—";
+
+                    const channelName =
+                      item?.display?.channelName?.en ||
+                      item?.display?.channelName?.bn ||
+                      item?.display?.channelName ||
+                      item?.channelId ||
+                      "—";
+
+                    return (
+                      <tr
+                        key={item._id || index}
+                        className="border-b border-blue-300/10 transition hover:bg-[#2f79c9]/10"
+                      >
+                        <td className="px-4 py-4 text-sm font-bold text-blue-50">
+                          {(page - 1) * limit + index + 1}
+                        </td>
+
+                        <td className="px-4 py-4 text-sm font-semibold text-blue-50/80">
+                          {formatDate(item.createdAt)}
+                        </td>
+
+                        <td className="px-4 py-4 text-sm font-black text-[#8fc2f5]">
+                          <div>{methodName}</div>
+                          <div className="mt-1 text-xs font-semibold uppercase text-blue-100/50">
+                            {item.methodId || "—"}
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-4 text-sm font-semibold text-blue-50">
+                          <div>{channelName}</div>
+                          <div className="mt-1 text-xs font-semibold text-blue-100/50">
+                            {item.channelId || "—"}
+                          </div>
+                        </td>
+
+                        <td className="max-w-[150px] px-4 py-4 text-sm font-semibold text-blue-50/80">
+                          <span className="line-clamp-2 break-all">
+                            {sender}
+                          </span>
+                        </td>
+
+                        <td className="max-w-[150px] px-4 py-4 text-sm font-semibold text-blue-50/80">
+                          <span className="line-clamp-2 break-all">
+                            {trxid}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-4 text-sm font-black text-[#8fc2f5]">
+                          {money(item.amount)}
+                        </td>
+
+                        <td className="px-4 py-4 text-sm font-bold text-blue-50/80">
+                          {money(item?.calc?.totalBonus || 0)}
+                        </td>
+
+                        <td className="px-4 py-4 text-sm font-black text-white">
+                          {money(item?.calc?.creditedAmount || 0)}
+                        </td>
+
+                        <td className="px-4 py-4 text-sm font-bold text-blue-50/80">
+                          {money(item?.calc?.targetTurnover || 0)}
+                        </td>
+
+                        <td className="px-4 py-4 text-sm font-semibold text-blue-50/80">
+                          {item.promoId || "none"}
+                        </td>
+
+                        <td className="max-w-[180px] px-4 py-4 text-sm font-semibold text-blue-50/70">
+                          <span className="line-clamp-2 break-all">
+                            {item.adminNote || "—"}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-4">
+                          <span
+                            className={`inline-flex rounded-full border px-3 py-1 text-xs font-black capitalize ${getStatusClass(
+                              item.status,
+                            )}`}
+                          >
+                            {item.status || "pending"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={13} className="px-4 py-12 text-center">
+                      <div className="text-base font-bold text-blue-100/60">
+                        No deposit history found
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-col items-center justify-between gap-3 rounded-2xl border border-blue-300/20 bg-black/35 p-4 sm:flex-row">
+          <div className="text-sm font-semibold text-blue-100/70">
+            Total:{" "}
+            <span className="font-black text-[#8fc2f5]">
+              {meta?.total || 0}
+            </span>{" "}
+            items
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={page <= 1 || isFetching}
+              onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+              className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl bg-[#2f79c9] text-white disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <FaChevronLeft />
+            </button>
+
+            <div className="rounded-xl border border-blue-300/20 bg-black/50 px-4 py-2 text-sm font-black text-[#8fc2f5]">
+              Page {page} / {totalPages}
+            </div>
+
+            <button
+              type="button"
+              disabled={page >= totalPages || isFetching}
+              onClick={() =>
+                setPage((prev) => (prev < totalPages ? prev + 1 : prev))
+              }
+              className="inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-xl bg-[#2f79c9] text-white disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <FaChevronRight />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SingleUserManualDepositHistory;

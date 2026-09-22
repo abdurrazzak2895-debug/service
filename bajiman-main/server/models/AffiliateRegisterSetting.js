@@ -1,0 +1,161 @@
+import mongoose from "mongoose";
+
+const { Schema } = mongoose;
+
+const localizedTextSchema = new Schema(
+  {
+    bn: { type: String, default: "", trim: true },
+    en: { type: String, default: "", trim: true },
+  },
+  { _id: false },
+);
+
+const noteSchema = new Schema(
+  {
+    text: localizedTextSchema,
+    order: { type: Number, default: 0 },
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
+    },
+  },
+  { _id: true },
+);
+
+const AffiliateRegisterSettingSchema = new Schema(
+  {
+    logo: { type: String, default: "", trim: true },
+
+    badgeText: {
+      type: localizedTextSchema,
+      default: () => ({ bn: "ক্রিকেক্স অ্যাফিলিয়েট", en: "Crickex Affiliate" }),
+    },
+    title: {
+      type: localizedTextSchema,
+      default: () => ({
+        bn: "অ্যাফিলিয়েট অ্যাকাউন্ট তৈরি করুন",
+        en: "Create Affiliate Account",
+      }),
+    },
+    subTitle: {
+      type: localizedTextSchema,
+      default: () => ({
+        bn: "আজই জয়েন করুন এবং লাইফটাইম কমিশন আয়ের সুযোগ নিন।",
+        en: "Join today and start earning lifetime commission.",
+      }),
+    },
+    commissionText: {
+      type: localizedTextSchema,
+      default: () => ({
+        bn: "৫০% লাইফটাইম কমিশন",
+        en: "50% Lifetime Commission",
+      }),
+    },
+
+    formTitle: {
+      type: localizedTextSchema,
+      default: () => ({ bn: "রেজিস্টার করুন", en: "Register" }),
+    },
+
+    usernameLabel: {
+      type: localizedTextSchema,
+      default: () => ({ bn: "ইউজারনেম", en: "Username" }),
+    },
+    phoneLabel: {
+      type: localizedTextSchema,
+      default: () => ({ bn: "ফোন নম্বর", en: "Phone" }),
+    },
+    emailLabel: {
+      type: localizedTextSchema,
+      default: () => ({ bn: "ইমেইল", en: "Email" }),
+    },
+    passwordLabel: {
+      type: localizedTextSchema,
+      default: () => ({ bn: "পাসওয়ার্ড", en: "Password" }),
+    },
+    confirmPasswordLabel: {
+      type: localizedTextSchema,
+      default: () => ({
+        bn: "কনফার্ম পাসওয়ার্ড",
+        en: "Confirm Password",
+      }),
+    },
+
+    submitText: {
+      type: localizedTextSchema,
+      default: () => ({ bn: "রেজিস্টার করুন", en: "Register" }),
+    },
+    submittingText: {
+      type: localizedTextSchema,
+      default: () => ({ bn: "রেজিস্টার হচ্ছে...", en: "Registering..." }),
+    },
+    alreadyText: {
+      type: localizedTextSchema,
+      default: () => ({
+        bn: "আগেই অ্যাকাউন্ট আছে?",
+        en: "Already have an account?",
+      }),
+    },
+    loginText: {
+      type: localizedTextSchema,
+      default: () => ({ bn: "লগইন", en: "Login" }),
+    },
+
+    notes: {
+      type: [noteSchema],
+      default: () => [
+        { text: { bn: "ফ্রি অ্যাকাউন্ট", en: "Free Account" }, order: 0 },
+        { text: { bn: "জিরো ইনভেস্টমেন্ট", en: "Zero Investment" }, order: 1 },
+        { text: { bn: "দ্রুত সাপোর্ট", en: "Fast Support" }, order: 2 },
+      ],
+    },
+
+    pageBg: { type: String, default: "#061532", trim: true },
+    leftCardBg: { type: String, default: "rgba(255,255,255,0.05)", trim: true },
+    leftCardBorder: {
+      type: String,
+      default: "rgba(255,255,255,0.10)",
+      trim: true,
+    },
+    badgeBg: { type: String, default: "#ffcc18", trim: true },
+    badgeTextColor: { type: String, default: "#061532", trim: true },
+    titleColor: { type: String, default: "#ffffff", trim: true },
+    subTitleColor: {
+      type: String,
+      default: "rgba(255,255,255,0.75)",
+      trim: true,
+    },
+    commissionBg: { type: String, default: "#ffcc18", trim: true },
+    commissionTextColor: { type: String, default: "#061532", trim: true },
+    noteBg: { type: String, default: "#0c2c62", trim: true },
+    noteTextColor: { type: String, default: "#ffffff", trim: true },
+    noteIconColor: { type: String, default: "#ffcc18", trim: true },
+
+    formCardBg: { type: String, default: "#ffffff", trim: true },
+    formTextColor: { type: String, default: "#111111", trim: true },
+    formTitleColor: { type: String, default: "#061532", trim: true },
+    labelColor: { type: String, default: "#061532", trim: true },
+    inputBg: { type: String, default: "#f4f7fb", trim: true },
+    inputBorder: { type: String, default: "#d9e2ef", trim: true },
+    inputFocusBorder: { type: String, default: "#ffcc18", trim: true },
+    inputIconColor: { type: String, default: "#0b66a8", trim: true },
+    submitBg: { type: String, default: "#ffcc18", trim: true },
+    submitTextColor: { type: String, default: "#061532", trim: true },
+    loginLinkColor: { type: String, default: "#0b66a8", trim: true },
+
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
+      index: true,
+    },
+  },
+  { timestamps: true },
+);
+
+const AffiliateRegisterSetting =
+  mongoose.models.AffiliateRegisterSetting ||
+  mongoose.model("AffiliateRegisterSetting", AffiliateRegisterSettingSchema);
+
+export default AffiliateRegisterSetting;
