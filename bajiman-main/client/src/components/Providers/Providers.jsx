@@ -9,7 +9,7 @@ import {
 } from "../../features/globalGame/globalGameSelectors";
 import { selectHomePageContentColorSetting } from "../../features/global/globalSelectors";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = "";
 
 const defaultContentColors = {
   sectionBg: "transparent",

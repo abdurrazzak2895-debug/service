@@ -9,7 +9,7 @@ import { useLanguage } from "../../Context/LanguageProvider";
 import { selectIsAuth, selectUser } from "../../features/auth/authSelectors";
 import Loading from "../../components/Loading/Loading";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_BASE = "";
 
 const PlayGame = () => {
   const navigate = useNavigate();

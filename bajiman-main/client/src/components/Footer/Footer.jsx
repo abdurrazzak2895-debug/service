@@ -4,7 +4,7 @@ import { useLanguage } from "../../Context/LanguageProvider";
 import { selectFooterSetting } from "../../features/global/globalSelectors";
 import ContactUsModal from "../ContactUsModal/ContactUsModal";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = "";
 
 const makeImageUrl = (path = "") => {
   if (!path) return "";

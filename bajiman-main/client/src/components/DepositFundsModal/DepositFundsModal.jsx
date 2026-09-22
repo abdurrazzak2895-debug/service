@@ -9,7 +9,7 @@ import { useLanguage } from "../../Context/LanguageProvider";
 import AutoDepositModal from "../AutoDepositModal/AutoDepositModal";
 import { selectModalColorSetting } from "../../features/global/globalSelectors";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = "";
 
 const defaultModalColors = {
   modalBg: "#ffffff",

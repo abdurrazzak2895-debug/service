@@ -42,7 +42,7 @@ import WithdrawModal from "../WithdrawModal/WithdrawModal";
 import ForgetPasswordModal from "../ForgetPasswordModal/ForgetPasswordModal";
 import ReferAndRedeemModal from "../ReferAndRedeemModal/ReferAndRedeemModal";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = "";
 
 const makeImageUrl = (path = "") => {
   if (!path) return "";

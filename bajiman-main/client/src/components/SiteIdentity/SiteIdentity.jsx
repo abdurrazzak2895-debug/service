@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { selectSiteIdentify } from "../../features/global/globalSelectors";
 import { useLanguage } from "../../Context/LanguageProvider";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const API_URL = "";
 
 const imageUrl = (path = "") => {
   if (!path) return "";

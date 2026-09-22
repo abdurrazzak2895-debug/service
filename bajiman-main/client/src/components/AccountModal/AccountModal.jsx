@@ -47,7 +47,7 @@ import PersonalInfoModal from "../PersonalInfoModal/PersonalInfoModal";
 import PasswordChangeModal from "../PasswordChangeModal/PasswordChangeModal";
 import ComingSoonHistoryModal from "../ComingSoonHistoryModal/ComingSoonHistoryModal";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = "";
 
 const defaults = {
   isEnabled: true,
