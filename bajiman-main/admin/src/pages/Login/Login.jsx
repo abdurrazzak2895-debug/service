@@ -8,6 +8,7 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useSearchParams } from "react-router";
 import { toast } from "react-toastify";
@@ -18,6 +19,8 @@ import {
   selectAuthLoading,
   selectIsAuthenticated,
 } from "../../features/auth/authSelectors";
+
+const MotionDiv = motion.div;
 
 const Login = () => {
   const dispatch = useDispatch();
@@ -142,7 +145,7 @@ const Login = () => {
       <div className="absolute left-1/2 top-0 h-64 w-64 -translate-x-1/2 rounded-full bg-[#1A79D3]/15 blur-3xl" />
 
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
-        <motion.div
+        <MotionDiv
           initial={{ opacity: 0, y: 24, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.45 }}
@@ -251,7 +254,7 @@ const Login = () => {
           <p className="mt-5 text-center text-xs text-slate-500">
             Admin Secure Control System
           </p>
-        </motion.div>
+        </MotionDiv>
       </div>
     </div>
   );
