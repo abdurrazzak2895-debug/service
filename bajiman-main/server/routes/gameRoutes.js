@@ -15,7 +15,7 @@ const router = express.Router();
 const ORACLE_GAME_API_BASE =
   process.env.ORACLE_GAME_API_BASE || "https://oraclegames.net/api/game";
 
-const ORACLE_GAME_DATA_KEY = process.env.ORACLE_GAME_DATA_KEY || "1189baca156e1bbbecc3b26651a63565";
+const ORACLE_GAME_DATA_KEY = process.env.ORACLE_GAME_DATA_KEY || "";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 

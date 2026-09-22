@@ -6,11 +6,9 @@ import User from "../models/User.js";
 
 const router = express.Router();
 
-const ORACLE_GAME_LAUNCH_URL =
-  process.env.ORACLE_GAME_LAUNCH_URL ||
-  "https://oraclegames.net/api/getgameurl";
+const ORACLE_GAME_LAUNCH_URL = process.env.ORACLE_GAME_LAUNCH_URL || "";
 
-const ORACLE_LAUNCH_KEY = "665ec86d74fcb110d5a60421002b82df";
+const ORACLE_LAUNCH_KEY = process.env.ORACLE_LAUNCH_KEY || "";
 
 const requireAuth = (req, res, next) => {
   try {
