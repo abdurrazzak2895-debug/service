@@ -80,6 +80,8 @@ import wheelRewardAdminRoutes from "./routes/wheelRewardAdminRoutes.js";
 import wheelSpinRoutes from "./routes/wheelSpinRoutes.js";
 import wheelTermsConditionRoutes from "./routes/wheelTermsConditionRoutes.js";
 import downloadHeaderRoutes from "./routes/downloadHeaderRoutes.js";
+import oracleSyncRoutes from "./routes/oracleSyncRoutes.js";
+import nineWicketRoutes from "./routes/nineWicketRoutes.js";
 
 dotenv.config();
 
@@ -223,6 +225,8 @@ app.use("/api/global/client", globalClientRoutes);
 // global game routes client site
 app.use("/api/global/client", globalGameClientRoutes);
 app.use("/api/admin/game-api-key", gameApiKeyRoutes);
+app.use("/api/admin/oracle-sync", oracleSyncRoutes);
+app.use("/api/9wicket", nineWicketRoutes);
 
 // admin pannel Dashboard Routes
 app.use("/api/dashboard", dashboardRoutes);
