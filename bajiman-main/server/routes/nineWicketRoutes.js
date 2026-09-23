@@ -62,16 +62,21 @@ export const launchNineWicket = async (req, res) => {
     if (!user || user.isActive !== true) return res.status(403).json({ success: false, message: "User is not active" });
 
     const amount = money(req.body?.amount ?? user.balance);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return res.status(400).json({ success: false, message: "Launch amount must be greater than zero" });
+    // 9Wicket documents balance=0 as inquiry + launch/re-open. This allows
+    // a user with an existing provider wallet to reopen it without a new
+    // local-wallet deposit.
+    if (!Number.isFinite(amount) || amount < 0) {
+      return res.status(400).json({ success: false, message: "Launch amount cannot be negative" });
     }
 
     const id = transferId("9w-launch", numericUserId(user));
-    const updated = await User.findOneAndUpdate(
-      { _id: user._id, balance: { $gte: amount }, isActive: true },
-      { $inc: { balance: -amount } },
-      { new: true },
-    );
+    const updated = amount === 0
+      ? user
+      : await User.findOneAndUpdate(
+          { _id: user._id, balance: { $gte: amount }, isActive: true },
+          { $inc: { balance: -amount } },
+          { new: true },
+        );
     if (!updated) return res.status(400).json({ success: false, message: "Insufficient balance" });
     reserved = amount;
 
