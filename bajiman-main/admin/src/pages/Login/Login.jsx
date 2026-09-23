@@ -70,6 +70,7 @@ const Login = () => {
       dispatch(
         setCredentials({
           admin: data.admin,
+          token: data.token,
         }),
       );
 

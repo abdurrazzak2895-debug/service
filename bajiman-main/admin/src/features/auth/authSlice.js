@@ -49,18 +49,22 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     setCredentials: (state, action) => {
-      const { admin } = action.payload;
+      const { admin, token } = action.payload;
       state.admin = admin;
-      state.token = null;
+      state.token = token || null;
       state.loading = false;
       state.error = null;
       localStorage.setItem("admin", JSON.stringify(admin));
+      if (token) {
+        localStorage.setItem("adminToken", token);
+      }
     },
     clearCredentials: (state) => {
       state.admin = null;
       state.token = null;
       state.loading = false;
       state.error = null;
+      localStorage.removeItem("adminToken");
       localStorage.removeItem("admin");
     },
     clearAuthError: (state) => {
@@ -74,7 +78,7 @@ const authSlice = createSlice({
       })
       .addCase(rehydrateAuth.fulfilled, (state, action) => {
         state.admin = action.payload.admin;
-        state.token = null;
+        state.token = localStorage.getItem("adminToken");
         state.loading = false;
         state.error = null;
       })
@@ -83,13 +87,15 @@ const authSlice = createSlice({
         state.token = null;
         state.loading = false;
         state.error = action.payload || "Auth restore failed";
+        localStorage.removeItem("adminToken");
+        localStorage.removeItem("admin");
       })
       .addCase(fetchAdminProfile.pending, (state) => {
         state.loading = true;
       })
       .addCase(fetchAdminProfile.fulfilled, (state, action) => {
         state.admin = action.payload;
-        state.token = null;
+        state.token = localStorage.getItem("adminToken");
         state.loading = false;
         state.error = null;
         localStorage.setItem("admin", JSON.stringify(action.payload));
@@ -99,6 +105,7 @@ const authSlice = createSlice({
         state.token = null;
         state.loading = false;
         state.error = action.payload || "Unauthorized";
+        localStorage.removeItem("adminToken");
         localStorage.removeItem("admin");
       });
   },
