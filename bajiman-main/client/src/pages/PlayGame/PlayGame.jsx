@@ -130,8 +130,14 @@ const PlayGame = () => {
     } catch (error) {
       console.error("PlayGame launch error:", error?.response?.data || error);
 
+      const providerCode = error?.response?.data?.code;
       const message =
-        error?.response?.data?.message ||
+        providerCode === "NINEWICKET_REQUIRES_INITIAL_CREDIT"
+          ? t(
+              "নতুন ব্যবহারকারীর জন্য প্রথমবার একটি positive amount দিয়ে গেম চালু করুন। এরপর zero balance হলেও পুরোনো 9Wicket wallet reopen করা যাবে।",
+              "This is a new 9Wicket account. Launch once with a positive amount; after that, zero-balance reopen is supported.",
+            )
+          : error?.response?.data?.message ||
         t("গেম চালু করা যায়নি", "Failed to launch game");
 
       setErrorText(message);
