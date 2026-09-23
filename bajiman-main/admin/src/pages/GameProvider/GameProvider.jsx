@@ -333,6 +333,27 @@ const GameProvider = () => {
     }
   };
 
+  const handleSyncFullWorldCasinoCatalog = async () => {
+    if (!form.categoryId) return toast.error("Please select category first");
+
+    try {
+      setLoading(true);
+      const response = await api.post("/api/game-providers/world-casino/sync", {
+        categoryId: form.categoryId,
+        brandId: "all",
+      });
+      const summary = response.data?.data || {};
+      toast.success(
+        `Full catalog synced: ${summary.providersCreated || 0} new providers, ${summary.gamesCreated || 0} new games`,
+      );
+      await loadSavedProviders();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "Full catalog sync failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     const ok = window.confirm(
       "Are you sure? This provider related all games will also be deleted.",
@@ -645,6 +666,16 @@ const GameProvider = () => {
             >
               <RefreshCw className="h-5 w-5" />
               Sync 9Wicket Catalog
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSyncFullWorldCasinoCatalog}
+              disabled={loading}
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-violet-400/30 bg-violet-500/10 px-5 py-3.5 text-sm font-black text-violet-100 transition hover:bg-violet-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw className="h-5 w-5" />
+              Sync Full Provider Catalog
             </button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import express from "express";
 import axios from "axios";
+import { URL } from "node:url";
 
 import GameApiKeySetting from "../models/GameApiKeySetting.js";
 import { protectAdmin } from "../middleware/protectAdmin.js";
@@ -11,11 +12,29 @@ const INITIAL_LIST_LIMIT = 50;
 
 const cleanText = (value = "") => String(value || "").trim();
 
-const cleanBaseUrl = (url = "") => cleanText(url).replace(/\/+$/, "");
+const cleanBaseUrl = (url = "") => {
+  const raw = cleanText(url);
+  if (!raw) return "";
 
-const getMasterApiBaseUrl = () => {
-  return cleanBaseUrl(process.env.MASTER_API_URL || "");
+  // MASTER_API_URL is an origin/base URL. Older deployments sometimes stored
+  // the full master endpoint here, which caused paths such as
+  // /api/api/master/.../api/master/... to be generated.
+  try {
+    const parsed = new URL(raw);
+    const masterPathIndex = parsed.pathname.indexOf("/api/master");
+    if (masterPathIndex >= 0) {
+      parsed.pathname = parsed.pathname.slice(0, masterPathIndex);
+    } else if (parsed.pathname === "/api") {
+      parsed.pathname = "";
+    }
+    parsed.search = "";
+    parsed.hash = "";
+    return parsed.toString().replace(/\/+$/, "");
+  } catch {
+    return raw.replace(/\/+$/, "");
+  }
 };
+const getMasterApiBaseUrl = () => cleanBaseUrl(process.env.MASTER_API_URL || "");
 
 const verifyMasterApiKey = async (apiKey) => {
   const masterApiBaseUrl = getMasterApiBaseUrl();
