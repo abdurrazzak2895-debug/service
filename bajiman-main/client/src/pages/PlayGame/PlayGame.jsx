@@ -30,6 +30,7 @@ const PlayGame = () => {
   const [loading, setLoading] = useState(true);
   const [launchUrl, setLaunchUrl] = useState("");
   const [errorText, setErrorText] = useState("");
+  const [demoAvailable, setDemoAvailable] = useState(false);
   const [hasTried, setHasTried] = useState(false);
 
   const uidFromQuery = searchParams.get("uid") || "";
@@ -79,6 +80,7 @@ const PlayGame = () => {
     try {
       setLoading(true);
       setErrorText("");
+      setDemoAvailable(false);
       setHasTried(true);
 
       let resolvedGameUid = uidFromQuery || gameId;
@@ -131,6 +133,7 @@ const PlayGame = () => {
       console.error("PlayGame launch error:", error?.response?.data || error);
 
       const providerCode = error?.response?.data?.code;
+      setDemoAvailable(providerCode === "NINEWICKET_REQUIRES_INITIAL_CREDIT");
       const message =
         providerCode === "NINEWICKET_REQUIRES_INITIAL_CREDIT"
           ? t(
@@ -198,6 +201,16 @@ const PlayGame = () => {
                 <RefreshCcw size={16} />
                 {t("আবার চেষ্টা করুন", "Try Again")}
               </button>
+
+              {demoAvailable && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/demo-game/${encodeURIComponent(gameId)}?uid=${encodeURIComponent(uidFromQuery)}`)}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-md bg-[#f5b942] px-4 py-2 text-sm font-bold text-[#1e1606] transition hover:bg-[#ffcf67]"
+                >
+                  {t("ডেমো খেলুন · ২০০০ ক্রেডিট", "Try Demo · 2,000 credits")}
+                </button>
+              )}
 
               <button
                 type="button"

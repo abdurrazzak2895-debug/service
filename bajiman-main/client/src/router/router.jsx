@@ -9,6 +9,7 @@ import Deposit from "../pages/Deposit/Deposit";
 import PrivateRoute from "../PrivateRoute/PrivateRoute";
 import Games from "../pages/Games/Games";
 import PlayGame from "../pages/PlayGame/PlayGame";
+import DemoGame from "../pages/DemoGame/DemoGame";
 import WheelSpin from "../pages/Reward/WheelSpin";
 
 export const routes = createBrowserRouter([
@@ -28,6 +29,10 @@ export const routes = createBrowserRouter([
       {
         path: "/play-game/:gameId",
         element: <PlayGame />,
+      },
+      {
+        path: "/demo-game/:gameId",
+        element: <DemoGame />,
       },
       {
         path: "withdraw",
