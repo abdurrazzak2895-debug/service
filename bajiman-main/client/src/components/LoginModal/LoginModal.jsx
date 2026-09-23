@@ -27,26 +27,26 @@ const defaultSetting = {
   logo: "",
   logoUrl: "",
 
-  overlayBg: "rgba(0,0,0,0.45)",
-  modalBg: "#ffffff",
-  headerBg: "#0865a9",
+  overlayBg: "rgba(1,8,17,0.78)",
+  modalBg: "#071321",
+  headerBg: "#0d1d30",
   headerText: "#ffffff",
 
-  labelText: "#333333",
-  inputBg: "#eeeeee",
-  inputText: "#222222",
-  inputBorder: "#d7d7d7",
-  inputFocusBorder: "#0a68b1",
-  placeholderText: "#8c98a3",
+  labelText: "#dbe7f2",
+  inputBg: "#10243a",
+  inputText: "#ffffff",
+  inputBorder: "rgba(255,255,255,0.12)",
+  inputFocusBorder: "#f5b942",
+  placeholderText: "#8195aa",
 
-  iconText: "#999999",
+  iconText: "#f5b942",
 
-  buttonBg: "#0865a9",
-  buttonText: "#ffffff",
-  buttonDisabledBg: "#a6a6a6",
+  buttonBg: "#f5b942",
+  buttonText: "#1e1606",
+  buttonDisabledBg: "#40536a",
 
-  linkText: "#0069b4",
-  footerText: "#8d8d8d",
+  linkText: "#ffcf67",
+  footerText: "#91a5ba",
 };
 
 const LoginModal = ({ open, onClose, onRegisterClick, onForgotClick }) => {
