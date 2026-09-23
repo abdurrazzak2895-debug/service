@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ChevronRight, Flame, Gamepad2, Play, Search, Sparkles, Trophy } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, Flame, Gamepad2, Play, Search, Sparkles, Trophy } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router";
 import { useLanguage } from "../../Context/LanguageProvider";
@@ -15,6 +15,7 @@ import {
   selectGameProviders,
   selectGlobalGameError,
 } from "../../features/globalGame/globalGameSelectors";
+import { selectUser, selectUserBalance } from "../../features/auth/authSelectors";
 
 const categoryIcon = (name = "") => {
   const value = name.toLowerCase();
@@ -40,6 +41,20 @@ const gameImage = (game) =>
   "";
 
 const gameId = (game) => game?.gameId || game?.id || game?._id;
+
+const vipTiers = [
+  { name: "Bronze", min: 0, color: "#c88955" },
+  { name: "Silver", min: 5000, color: "#cbd5e1" },
+  { name: "Gold", min: 25000, color: "#f5b942" },
+  { name: "Platinum", min: 100000, color: "#9dd7ff" },
+  { name: "Diamond", min: 500000, color: "#d9b7ff" },
+];
+
+const getVip = (balance, user) => {
+  const explicit = String(user?.vipTier || user?.vip?.tier || "").trim().toLowerCase();
+  return vipTiers.find((tier) => tier.name.toLowerCase() === explicit) ||
+    [...vipTiers].reverse().find((tier) => balance >= tier.min) || vipTiers[0];
+};
 
 const GameCard = ({ game, isBangla, onPlay }) => {
   const image = gameImage(game);
@@ -75,6 +90,8 @@ const MarbajiLobby = () => {
   const { isBangla } = useLanguage();
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("all");
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [carouselPaused, setCarouselPaused] = useState(false);
   const categories = useSelector(selectGameCategories);
   const providers = useSelector(selectGameProviders);
   const games = useSelector(selectGlobalGames);
@@ -83,10 +100,24 @@ const MarbajiLobby = () => {
   const loaded = useSelector(selectGlobalGameLoaded);
   const loading = useSelector(selectGlobalGameLoading);
   const error = useSelector(selectGlobalGameError);
+  const user = useSelector(selectUser);
+  const userBalance = useSelector(selectUserBalance);
+  const vip = getVip(userBalance, user);
+  const carouselSlides = [
+    { eyebrow: isBangla ? "আজকের স্পেশাল" : "TODAY'S SPECIAL", title: isBangla ? "গোল্ডেন গেমিং নাইট" : "Golden gaming night", text: isBangla ? "প্রিমিয়াম গেমে আপনার ভাগ্য পরীক্ষা করুন" : "Try your luck across premium games.", className: "gold" },
+    { eyebrow: isBangla ? "স্পোর্টস লাইভ" : "LIVE SPORTS", title: isBangla ? "প্রতিটি মুহূর্তে জয়" : "Win every moment", text: isBangla ? "স্পোর্টস ও লাইভ অ্যাকশনে যোগ দিন" : "Join the action across sports and live play.", className: "blue" },
+    { eyebrow: isBangla ? "ভিআইপি সুবিধা" : "VIP PRIVILEGES", title: isBangla ? "আপনার স্ট্যাটাস বাড়ান" : "Level up your status", text: isBangla ? "আরও খেলুন, আরও সুবিধা পান" : "Play more and unlock more benefits.", className: "violet" },
+  ];
 
   useEffect(() => {
     if (!loaded) dispatch(fetchGlobalGameData());
   }, [dispatch, loaded]);
+
+  useEffect(() => {
+    if (carouselPaused) return undefined;
+    const timer = window.setInterval(() => setActiveSlide((current) => (current + 1) % carouselSlides.length), 5000);
+    return () => window.clearInterval(timer);
+  }, [carouselPaused, carouselSlides.length]);
 
   const filteredGames = useMemo(() => {
     let list = Array.isArray(games) ? games : [];
@@ -110,11 +141,28 @@ const MarbajiLobby = () => {
 
   return (
     <main className="mb-lobby">
+      <section className="mb-lobby-carousel" onMouseEnter={() => setCarouselPaused(true)} onMouseLeave={() => setCarouselPaused(false)} aria-label="Promotional banners">
+        {carouselSlides.map((slide, index) => (
+          <article key={slide.title} className={`mb-lobby-slide ${slide.className} ${index === activeSlide ? "is-active" : ""}`} aria-hidden={index !== activeSlide}>
+            <div className="mb-lobby-slide-copy"><span className="mb-lobby-kicker">{slide.eyebrow}</span><h2>{slide.title}</h2><p>{slide.text}</p><button type="button" className="mb-lobby-cta" onClick={openCategory}>{isBangla ? "খেলুন" : "Explore"}<ChevronRight size={17} /></button></div>
+            <div className="mb-lobby-slide-orb"><Sparkles size={48} /></div>
+          </article>
+        ))}
+        <button type="button" className="mb-lobby-carousel-arrow prev" onClick={() => setActiveSlide((activeSlide - 1 + carouselSlides.length) % carouselSlides.length)} aria-label="Previous banner"><ArrowLeft size={17} /></button>
+        <button type="button" className="mb-lobby-carousel-arrow next" onClick={() => setActiveSlide((activeSlide + 1) % carouselSlides.length)} aria-label="Next banner"><ArrowRight size={17} /></button>
+        <div className="mb-lobby-dots">{carouselSlides.map((slide, index) => <button type="button" key={slide.title} className={index === activeSlide ? "active" : ""} onClick={() => setActiveSlide(index)} aria-label={`Show banner ${index + 1}`} />)}</div>
+      </section>
       <div className="mb-lobby-hero">
         <div className="mb-lobby-hero-glow" />
         <div className="mb-lobby-hero-copy"><span className="mb-lobby-kicker">{isBangla ? "প্রিমিয়াম গেমিং" : "PREMIUM GAMING"}</span><h1>{title}</h1><p>{isBangla ? "সেরা স্পোর্টস, ক্যাসিনো ও স্লট গেম এক জায়গায়" : "Sports, casino and slot favorites in one place."}</p><button type="button" className="mb-lobby-cta" onClick={openCategory}>{isBangla ? "এখনই খেলুন" : "Play now"}<ChevronRight size={17} /></button></div>
         <div className="mb-lobby-hero-mark"><Trophy size={54} /><span>PLAY<br />BOLD</span></div>
       </div>
+
+      <section className="mb-lobby-vip" style={{ "--vip-color": vip.color }}>
+        <div className="mb-lobby-vip-badge"><Trophy size={21} /><span>VIP</span></div>
+        <div className="mb-lobby-vip-copy"><span>{isBangla ? "আপনার বর্তমান স্তর" : "Your current tier"}</span><strong>{vip.name}</strong><small>{isBangla ? "ব্যালেন্সের ভিত্তিতে" : "Based on current balance"}</small></div>
+        <div className="mb-lobby-vip-meter"><div className="mb-lobby-vip-meter-head"><span>{isBangla ? "লয়্যালটি প্রগ্রেস" : "Loyalty progress"}</span><b>{userBalance.toLocaleString()} {user?.currency || "BDT"}</b></div><div className="mb-lobby-vip-track"><span style={{ width: `${Math.min(100, Math.max(8, (userBalance / (vip.min + (vip.min || 5000))) * 100))}%` }} /></div><small>{isBangla ? "পরবর্তী স্তরের সুবিধা আনলক করুন" : "Keep playing to unlock the next tier"}</small></div>
+      </section>
 
       <div className="mb-lobby-toolbar">
         <div className="mb-lobby-search"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={isBangla ? "গেম খুঁজুন..." : "Search games..."} /></div>
