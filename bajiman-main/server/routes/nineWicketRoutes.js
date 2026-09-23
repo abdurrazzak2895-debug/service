@@ -51,6 +51,63 @@ const plainFor = ({ user, balance, transferId: id, gameUid: providerGameUid = co
   transfer_id: id,
 });
 
+const providerErrorResponse = (error, { amount = null } = {}) => {
+  const provider = error.providerResponse || {};
+  const providerCode = Number(provider.code);
+  const providerMessage = String(provider.msg || error.message || "9Wicket launch failed");
+  const normalized = providerMessage.toLowerCase();
+
+  if (amount === 0 && (providerCode === 400 || /user|member|wallet|balance|session|not found|empty|credit/i.test(normalized))) {
+    return {
+      status: 409,
+      body: {
+        success: false,
+        code: "NINEWICKET_REQUIRES_INITIAL_CREDIT",
+        message: "This is a new 9Wicket account. Please add a positive launch amount before opening the game.",
+        providerMessage,
+        providerCode: Number.isFinite(providerCode) ? providerCode : null,
+      },
+    };
+  }
+
+  if (providerCode === 7 || /not available|currency|usdt|unsupported/i.test(normalized)) {
+    return {
+      status: 422,
+      body: {
+        success: false,
+        code: "NINEWICKET_GAME_OR_CURRENCY_UNAVAILABLE",
+        message: "9Wicket is not available for this game or currency.",
+        providerMessage,
+        providerCode: Number.isFinite(providerCode) ? providerCode : null,
+      },
+    };
+  }
+
+  if (/secret|decrypt|timestamp|ip not allowed|whitelist|ggr/i.test(normalized)) {
+    return {
+      status: 503,
+      body: {
+        success: false,
+        code: "NINEWICKET_CONFIGURATION_ERROR",
+        message: "9Wicket is temporarily unavailable. Please contact support.",
+        providerMessage,
+        providerCode: Number.isFinite(providerCode) ? providerCode : null,
+      },
+    };
+  }
+
+  return {
+    status: error.response?.status || 502,
+    body: {
+      success: false,
+      code: "NINEWICKET_LAUNCH_FAILED",
+      message: "Unable to open 9Wicket right now. Please try again.",
+      providerMessage,
+      providerCode: Number.isFinite(providerCode) ? providerCode : null,
+    },
+  };
+};
+
 export const launchNineWicket = async (req, res) => {
   let reserved = 0;
   let session;
@@ -117,7 +174,8 @@ export const launchNineWicket = async (req, res) => {
   } catch (error) {
     if (reserved) await User.findByIdAndUpdate(req.user.id, { $inc: { balance: reserved } });
     if (session?._id) await NineWicketSession.findByIdAndUpdate(session._id, { $set: { status: "failed", lastError: error.message } });
-    return res.status(error.response?.status || 502).json({ success: false, message: error.message, provider: error.providerResponse || null });
+    const failure = providerErrorResponse(error, { amount: Number(req.body?.amount ?? 0) });
+    return res.status(failure.status).json(failure.body);
   }
 };
 
