@@ -272,12 +272,12 @@ const Sidebar = () => {
       //   icon: <MdCategory />,
       //   text: "Add Category",
       // },
-      // {
-      //   key: "add-provider",
-      //   to: "/add-provider",
-      //   icon: <FaServer />,
-      //   text: "Add Provider",
-      // },
+      {
+        key: "add-provider",
+        to: "/add-provider",
+        icon: <FaServer />,
+        text: "Add Provider",
+      },
       // {
       //   key: "add-game",
       //   to: "/add-game",

@@ -33,7 +33,7 @@ import WithdrawRequestDetails from "../pages/WithdrawRequestDetails/WithdrawRequ
 
 // game router
 // import GameCategory from "../pages/GameCategory/GameCategory";
-// import GameProvider from "../pages/GameProvider/GameProvider";
+import GameProvider from "../pages/GameProvider/GameProvider";
 // import Game from "../pages/Game/Game";
 // import Sport from "../pages/Sport/Sport";
 // import AddPopularGame from "../pages/AddPopularGame/AddPopularGame";
@@ -301,14 +301,14 @@ export const routes = createBrowserRouter([
       //     </PrivateRoute>
       //   ),
       // },
-      // {
-      //   path: "add-provider",
-      //   element: (
-      //     <PrivateRoute permKey="add-provider">
-      //       <GameProvider />
-      //     </PrivateRoute>
-      //   ),
-      // },
+      {
+        path: "add-provider",
+        element: (
+          <PrivateRoute permKey="add-provider">
+            <GameProvider />
+          </PrivateRoute>
+        ),
+      },
       // {
       //   path: "add-game",
       //   element: (
