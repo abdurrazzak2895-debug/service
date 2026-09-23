@@ -4,6 +4,7 @@ import { api } from "../../api/axios";
 const GAME_PROXY_API = "/api/admin/game-api-key/client";
 
 const LOCAL_GAME_DATA_API = "/api/global/client/game-data";
+const LOCAL_GAME_API = "/api/global/client";
 
 const loadGameData = async (url) => {
   const res = await api.get(url);
@@ -62,11 +63,18 @@ const runInBatches = async (items, worker, batchSize) => {
 const fetchAllGamesFor = async (extraParams, pageCap) => {
   const fetchPage = (page) =>
     api
-      .get(`${GAME_PROXY_API}/game-list`, {
+      .get(`${LOCAL_GAME_API}/game-list`, {
         params: { ...extraParams, page, limit: PAGE_LIMIT },
       })
       .then((res) => res?.data?.data || {})
-      .catch(() => ({ games: [], meta: { totalPages: 1 } }));
+      .catch(() =>
+        api
+          .get(`${GAME_PROXY_API}/game-list`, {
+            params: { ...extraParams, page, limit: PAGE_LIMIT },
+          })
+          .then((res) => res?.data?.data || {})
+          .catch(() => ({ games: [], meta: { totalPages: 1 } })),
+      );
 
   const first = await fetchPage(1);
   let games = Array.isArray(first.games) ? first.games : [];
@@ -155,7 +163,12 @@ export const fetchPlayGameDetails = createAsyncThunk(
   "globalGame/fetchPlayGameDetails",
   async (gameId, { rejectWithValue }) => {
     try {
-      const res = await api.get(`${GAME_PROXY_API}/play-game/${gameId}`);
+      let res;
+      try {
+        res = await api.get(`${LOCAL_GAME_API}/play-game/${gameId}`);
+      } catch (localError) {
+        res = await api.get(`${GAME_PROXY_API}/play-game/${gameId}`);
+      }
       return res?.data?.data || null;
     } catch (error) {
       return rejectWithValue(
