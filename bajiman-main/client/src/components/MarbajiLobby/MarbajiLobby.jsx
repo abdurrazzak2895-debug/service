@@ -141,6 +141,11 @@ const MarbajiLobby = () => {
 
   return (
     <main className="mb-lobby">
+      <header className="mb-lobby-catalog-header">
+        <div className="mb-lobby-brand"><span className="mb-lobby-brand-mark">MB</span><div><strong>MARBAJI</strong><small>{isBangla ? "প্রিমিয়াম গেমিং লাউঞ্জ" : "PREMIUM GAMING LOUNGE"}</small></div></div>
+        <nav className="mb-lobby-header-links" aria-label="Lobby navigation"><button type="button" onClick={() => setActiveCategory("all")}>{isBangla ? "হোম" : "Home"}</button><button type="button" onClick={openCategory}>{isBangla ? "সব গেম" : "All games"}</button><button type="button" onClick={() => navigate("/deposit")}>{isBangla ? "ডিপোজিট" : "Deposit"}</button></nav>
+        <div className="mb-lobby-header-status"><span className="mb-lobby-status-dot" />{isBangla ? "লাইভ সাপোর্ট" : "Live support"}</div>
+      </header>
       <section className="mb-lobby-carousel" onMouseEnter={() => setCarouselPaused(true)} onMouseLeave={() => setCarouselPaused(false)} aria-label="Promotional banners">
         {carouselSlides.map((slide, index) => (
           <article key={slide.title} className={`mb-lobby-slide ${slide.className} ${index === activeSlide ? "is-active" : ""}`} aria-hidden={index !== activeSlide}>
@@ -178,6 +183,7 @@ const MarbajiLobby = () => {
       {error && <div className="mb-lobby-status error">{isBangla ? "গেম লোড করা যায়নি" : "Could not load games"}</div>}
       {!loading && !error && query && <Section icon={Search} title={isBangla ? "সার্চ রেজাল্ট" : "Search results"} games={filteredGames} isBangla={isBangla} onPlay={play} onMore={openCategory} />}
       {!query && <><Section icon={Flame} title={isBangla ? "জনপ্রিয় গেম" : "Popular games"} games={popularGames} isBangla={isBangla} onPlay={play} onMore={openCategory} /><Section icon={Sparkles} title={isBangla ? "সব গেম" : "All games"} games={filteredGames} isBangla={isBangla} onPlay={play} onMore={openCategory} /></>}
+      <footer className="mb-lobby-footer"><div><strong>MARBAJI</strong><span>{isBangla ? "খেলুন দায়িত্বশীলভাবে • ১৮+" : "Play responsibly • 18+"}</span></div><div className="mb-lobby-footer-links"><button type="button">{isBangla ? "শর্তাবলি" : "Terms"}</button><button type="button">{isBangla ? "গোপনীয়তা" : "Privacy"}</button><button type="button">{isBangla ? "সাপোর্ট" : "Support"}</button></div><small>© {new Date().getFullYear()} Marbaji</small></footer>
     </main>
   );
 };
