@@ -6,8 +6,8 @@ import protectUser from "../middleware/protectUser.js";
 import { decryptPayload, getTransactions, postTransfer } from "../services/nineWicketService.js";
 
 const router = express.Router();
-const gameUid = () => String(process.env.NINEWICKET_GAME_UID || "11539");
-const symbol = () => String(process.env.NINEWICKET_SYMBOL || "9W");
+const configuredGameUid = () => String(process.env.NINEWICKET_GAME_UID || "11539").trim();
+const symbol = () => String(process.env.NINEWICKET_SYMBOL || "9W").trim();
 const callbackUrl = () => String(process.env.NINEWICKET_CALLBACK_URL || "").trim();
 const returnUrl = () => String(process.env.NINEWICKET_RETURN_URL || "").trim();
 const currency = () => String(process.env.NINEWICKET_CURRENCY || "BDT").trim().toUpperCase();
@@ -28,10 +28,20 @@ const numericUserId = (user) => {
   return parseInt(String(user._id).replace(/\D/g, "").slice(-9), 10) || 1;
 };
 
-const plainFor = ({ user, balance, transferId: id }) => ({
+// Existing local demo cards can contain Mongo IDs or slugs. In those cases,
+// use the configured 9Wicket game UID instead of sending an invalid provider UID.
+const resolveProviderGameUid = (value) => {
+  const requested = String(value || "").trim();
+  if (!requested) return configuredGameUid();
+  if (/^[a-f0-9]{24}$/i.test(requested)) return configuredGameUid();
+  if (/^(sports|casino|slot|fishing|hot|football|cricket)-/i.test(requested)) return configuredGameUid();
+  return requested;
+};
+
+const plainFor = ({ user, balance, transferId: id, gameUid: providerGameUid = configuredGameUid() }) => ({
   user_id: numericUserId(user),
   balance: money(balance),
-  game_uid: gameUid(),
+  game_uid: String(providerGameUid),
   symbol: symbol(),
   timestamp: Date.now(),
   return: returnUrl(),
@@ -41,15 +51,20 @@ const plainFor = ({ user, balance, transferId: id }) => ({
   transfer_id: id,
 });
 
-router.post("/launch", protectUser, async (req, res) => {
+export const launchNineWicket = async (req, res) => {
   let reserved = 0;
   let session;
   try {
     validateUrls();
+    const requestedGameUid = req.body?.game_uid || req.body?.gameID || req.body?.gameId;
+    const providerGameUid = resolveProviderGameUid(requestedGameUid);
     const user = await User.findById(req.user.id).select("userId balance currency isActive");
     if (!user || user.isActive !== true) return res.status(403).json({ success: false, message: "User is not active" });
+
     const amount = money(req.body?.amount ?? user.balance);
-    if (!Number.isFinite(amount) || amount <= 0) return res.status(400).json({ success: false, message: "Launch amount must be greater than zero" });
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ success: false, message: "Launch amount must be greater than zero" });
+    }
 
     const id = transferId("9w-launch", numericUserId(user));
     const updated = await User.findOneAndUpdate(
@@ -59,17 +74,23 @@ router.post("/launch", protectUser, async (req, res) => {
     );
     if (!updated) return res.status(400).json({ success: false, message: "Insufficient balance" });
     reserved = amount;
+
     session = await NineWicketSession.create({
       user: user._id,
       userId: numericUserId(user),
-      gameUid: gameUid(),
+      gameUid: providerGameUid,
       symbol: symbol(),
       launchTransferId: id,
       launchAmount: amount,
       status: "launching",
     });
 
-    const result = await postTransfer(plainFor({ user, balance: amount, transferId: id }));
+    const result = await postTransfer(plainFor({
+      user,
+      balance: amount,
+      transferId: id,
+      gameUid: providerGameUid,
+    }));
     const providerSessionId = Number(result?.data?.session_id || 0) || null;
     await NineWicketSession.findByIdAndUpdate(session._id, {
       $set: {
@@ -79,13 +100,23 @@ router.post("/launch", protectUser, async (req, res) => {
         startedAt: new Date(),
       },
     });
-    return res.json({ success: true, gameUrl: result.data.url, data: result.data, sessionId: providerSessionId });
+
+    return res.json({
+      success: true,
+      gameUrl: result.data.url,
+      launch_url: result.data.url,
+      data: { ...result.data, game_uid: providerGameUid },
+      sessionId: providerSessionId,
+      provider: "9wicket",
+    });
   } catch (error) {
     if (reserved) await User.findByIdAndUpdate(req.user.id, { $inc: { balance: reserved } });
     if (session?._id) await NineWicketSession.findByIdAndUpdate(session._id, { $set: { status: "failed", lastError: error.message } });
     return res.status(error.response?.status || 502).json({ success: false, message: error.message, provider: error.providerResponse || null });
   }
-});
+};
+
+router.post("/launch", protectUser, launchNineWicket);
 
 router.post("/inquiry", protectUser, async (req, res) => {
   try {
@@ -98,7 +129,7 @@ router.post("/inquiry", protectUser, async (req, res) => {
       { $set: { lastProviderBalance: money(result?.data?.after_amount || 0) } },
       { sort: { createdAt: -1 } },
     );
-    return res.json({ success: true, data: result.data });
+    return res.json({ success: true, data: result.data, provider: "9wicket" });
   } catch (error) {
     return res.status(502).json({ success: false, message: error.message, provider: error.providerResponse || null });
   }
@@ -115,16 +146,16 @@ router.post("/cashout", protectUser, async (req, res) => {
       { sort: { createdAt: -1 }, new: true },
     );
     if (!session) return res.status(404).json({ success: false, message: "No active 9Wicket session" });
-    const inquiry = await postTransfer(plainFor({ user, balance: 0, transferId: transferId("9w-inquiry", numericUserId(user)) }));
+    const inquiry = await postTransfer(plainFor({ user, balance: 0, transferId: transferId("9w-inquiry", numericUserId(user)), gameUid: session.gameUid }));
     const remaining = money(inquiry?.data?.after_amount || 0);
     if (remaining <= 0) {
       await NineWicketSession.findByIdAndUpdate(session._id, { $set: { status: "cashed_out", lastProviderBalance: 0, cashedOutAt: new Date(), endedAt: new Date() } });
-      return res.json({ success: true, data: { remaining: 0, credited: 0 } });
+      return res.json({ success: true, data: { remaining: 0, credited: 0 }, provider: "9wicket" });
     }
-    const result = await postTransfer(plainFor({ user, balance: -remaining, transferId: transferId("9w-cashout", numericUserId(user)) }));
+    const result = await postTransfer(plainFor({ user, balance: -remaining, transferId: transferId("9w-cashout", numericUserId(user)), gameUid: session.gameUid }));
     await User.findByIdAndUpdate(user._id, { $inc: { balance: remaining } });
     await NineWicketSession.findByIdAndUpdate(session._id, { $set: { status: "cashed_out", lastProviderBalance: money(result?.data?.after_amount || 0), cashedOutAt: new Date(), endedAt: new Date() } });
-    return res.json({ success: true, data: { ...result.data, credited: remaining } });
+    return res.json({ success: true, data: { ...result.data, credited: remaining }, provider: "9wicket" });
   } catch (error) {
     await NineWicketSession.findOneAndUpdate({ user: req.user.id, status: "cashout_pending" }, { $set: { status: "active", lastError: error.message } }, { sort: { createdAt: -1 } });
     return res.status(502).json({ success: false, message: error.message, provider: error.providerResponse || null });
@@ -135,7 +166,7 @@ router.get("/transactions", protectUser, async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("userId");
     const data = await getTransactions("/9w/transactions", { user_id: numericUserId(user), from: req.query.from, to: req.query.to, status: req.query.status, page: req.query.page, page_size: req.query.page_size });
-    return res.json({ success: true, data });
+    return res.json({ success: true, data, provider: "9wicket" });
   } catch (error) { return res.status(502).json({ success: false, message: error.message, provider: error.providerResponse || null }); }
 });
 
@@ -144,7 +175,7 @@ router.get("/session-transactions", protectUser, async (req, res) => {
     const user = await User.findById(req.user.id).select("userId");
     const params = req.query.session_id ? { session_id: req.query.session_id } : { user_id: numericUserId(user), launched_at: req.query.launched_at };
     const data = await getTransactions("/9w/session-transactions", params);
-    return res.json({ success: true, data });
+    return res.json({ success: true, data, provider: "9wicket" });
   } catch (error) { return res.status(502).json({ success: false, message: error.message, provider: error.providerResponse || null }); }
 });
 
