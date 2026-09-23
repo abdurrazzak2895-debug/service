@@ -312,6 +312,27 @@ const GameProvider = () => {
     }
   };
 
+  const handleSyncNineWicketCatalog = async () => {
+    if (!form.categoryId) return toast.error("Please select category first");
+
+    try {
+      setLoading(true);
+      const response = await api.post("/api/game-providers/world-casino/sync", {
+        categoryId: form.categoryId,
+        brandId: "141",
+      });
+      const summary = response.data?.data || {};
+      toast.success(
+        `9Wicket synced: ${summary.gamesFetched || 0} games (${summary.gamesCreated || 0} new)`,
+      );
+      await loadSavedProviders();
+    } catch (error) {
+      toast.error(error?.response?.data?.message || "9Wicket catalog sync failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (id) => {
     const ok = window.confirm(
       "Are you sure? This provider related all games will also be deleted.",
@@ -585,7 +606,7 @@ const GameProvider = () => {
             />
           </div>
 
-          <div className="mt-6 grid gap-3 md:grid-cols-2">
+          <div className="mt-6 grid gap-3 md:grid-cols-3">
             <button
               type="submit"
               disabled={loading}
@@ -614,6 +635,16 @@ const GameProvider = () => {
             >
               <Globe2 className="h-5 w-5" />
               Sync Selected Oracle
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSyncNineWicketCatalog}
+              disabled={loading}
+              className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-5 py-3.5 text-sm font-black text-emerald-100 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw className="h-5 w-5" />
+              Sync 9Wicket Catalog
             </button>
           </div>
         </div>

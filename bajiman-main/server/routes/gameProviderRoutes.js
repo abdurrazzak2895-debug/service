@@ -12,6 +12,7 @@ import upload from "../config/multer.js";
 import { protectAdmin } from "../middleware/protectAdmin.js";
 
 import { successResponse, errorResponse } from "../utils/response.js";
+import syncWorldCasinoCatalog from "../services/worldCasinoCatalogSync.js";
 
 const router = express.Router();
 
@@ -207,6 +208,39 @@ router.post("/oracle/sync", protectAdmin, async (req, res) => {
     }
 
     return errorResponse(res, error.message || "Server error", 500);
+  }
+});
+
+/* ======================================================
+   SYNC WORLD CASINO / 9WICKET CATALOG
+   POST /api/game-providers/world-casino/sync
+====================================================== */
+
+router.post("/world-casino/sync", protectAdmin, async (req, res) => {
+  try {
+    const { categoryId, brandId = "141", dryRun = false } = req.body || {};
+
+    if (!categoryId || !isValidObjectId(categoryId)) {
+      return errorResponse(res, "Valid categoryId is required", 400);
+    }
+
+    const result = await syncWorldCasinoCatalog({
+      categoryId,
+      brandId: brandId === "all" ? "" : brandId,
+      dryRun: toBool(dryRun),
+    });
+
+    return successResponse(
+      res,
+      result.providerErrors.length
+        ? "World Casino catalog sync completed with provider errors"
+        : result.dryRun
+          ? "World Casino catalog dry-run completed"
+          : "World Casino catalog synced successfully",
+      result,
+    );
+  } catch (error) {
+    return errorResponse(res, error.message || "World Casino catalog sync failed", 500);
   }
 });
 
