@@ -1,14 +1,16 @@
 import React, { useMemo, useState } from "react";
 import { ArrowLeft, Coins, Gamepad2, RotateCcw, Sparkles } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
+import { useSelector } from "react-redux";
+import { selectUser } from "../../features/auth/authSelectors";
 
 const STARTING_CREDITS = 2000;
 const STORAGE_KEY = "bajiman_demo_wallet_v1";
 
-const readWallet = (gameId) => {
+const readWallet = (gameId, userId) => {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-    const existing = saved?.[gameId];
+    const existing = saved?.[gameId] || (userId ? saved?.[userId] : null);
     if (existing && Number.isFinite(Number(existing.balance))) return existing;
   } catch {
     // Use a fresh demo wallet when local storage is unavailable or invalid.
@@ -20,7 +22,9 @@ const DemoGame = () => {
   const navigate = useNavigate();
   const { gameId } = useParams();
   const [searchParams] = useSearchParams();
-  const [wallet, setWallet] = useState(() => readWallet(gameId));
+  const user = useSelector(selectUser);
+  const demoUserId = user?._id || user?.id || user?.userId || "guest";
+  const [wallet, setWallet] = useState(() => readWallet(gameId, demoUserId));
   const [message, setMessage] = useState("Try the demo with virtual credits only.");
   const [playing, setPlaying] = useState(false);
   const gameUid = searchParams.get("uid") || gameId || "demo-game";

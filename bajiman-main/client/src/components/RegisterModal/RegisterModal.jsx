@@ -497,6 +497,25 @@ const RegisterModal = ({ open, onClose, onLoginClick }) => {
 
       if (user && token) {
         dispatch(setCredentials({ user, token }));
+        try {
+          const demoUserId = user?._id || user?.id || user?.userId;
+          if (demoUserId) {
+            const saved = JSON.parse(
+              localStorage.getItem("bajiman_demo_wallet_v1") || "{}",
+            );
+            if (!saved[demoUserId]) {
+              localStorage.setItem(
+                "bajiman_demo_wallet_v1",
+                JSON.stringify({
+                  ...saved,
+                  [demoUserId]: { balance: 2000, plays: 0 },
+                }),
+              );
+            }
+          }
+        } catch {
+          // Demo credits are best-effort local state and never affect real balance.
+        }
       }
 
       toast.success(res?.message || text.success);
