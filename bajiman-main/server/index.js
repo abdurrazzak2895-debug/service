@@ -143,8 +143,8 @@ app.use("/api", async (req, res, next) => {
   try {
     await connectDB();
     next();
-  } catch {
-    res.status(503).json({ success: false, message: "Database temporarily unavailable" });
+  } catch (err) {
+    res.status(503).json({ success: false, message: "Database temporarily unavailable", detail: String(err?.message || err).slice(0, 300) });
   }
 });
 app.use("/api/admin", adminRoutes);
