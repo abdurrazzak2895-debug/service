@@ -27,7 +27,7 @@ Root directory: `server`
 | `WORLD_CASINO_9WICKET_SOURCE_GAME_UIDS` | `48341a3bf62b6dd0814d7129e7e0834b` | Legacy IDs that resolve to 9Wicket. |
 | `HEALTH_CHECK_KEY` | *(any strong random string)* | Required to call `/api/9wicket/health` in prod. Send as `x-health-key` header or `?key=`. Leave unset to keep the endpoint open (dev only). |
 | `OUTBOUND_PROXY_URL` | *(empty, or `http://user:pass@STATIC_IP:PORT`)* | Routes provider calls through a fixed-IP proxy so the provider sees a stable whitelisted IP. See "static egress" below. |
-| `ALLOWED_ORIGINS` | `https://bajiman-client-one.vercel.app,https://<admin>.vercel.app,https://<affiliate>.vercel.app` | Comma-separated list of client origins allowed to make credentialed requests. Leave **empty** only in local dev (reflects any origin). Requests without an Origin header (provider callbacks, server-to-server) always pass. |
+| `ALLOWED_ORIGINS` | `https://bajiman-client-one.vercel.app,https://bajiman-admin-seven.vercel.app,https://bajiman-affiliate-brown.vercel.app,https://bajiman-brand-five.vercel.app,https://bajiman-guide-sigma.vercel.app` | Comma-separated list of client origins allowed to make credentialed requests. Leave **empty** only in local dev (reflects any origin). Requests without an Origin header (provider callbacks, server-to-server) always pass. |
 
 > The server also accepts `NINEWICKET_*` names directly; the `WORLD_CASINO_*`
 > names above are auto-mapped, so you only need one set.
@@ -60,12 +60,12 @@ used when `VITE_API_URL` is empty and requests hit `/api/*` on the client origin
 
 Optional cross-app links used by the client UI (set to the deployed URLs):
 
-| Key | Example |
-|-----|---------|
-| `VITE_ADMIN_URL` | `https://<admin>.vercel.app` |
-| `VITE_AFFILIATE_URL` | `https://<affiliate>.vercel.app` |
-| `VITE_BRAND_URL` | `https://<brand>.vercel.app` |
-| `VITE_GUIDE_URL` | `https://<guide>.vercel.app` |
+| Key | Value |
+|-----|-------|
+| `VITE_ADMIN_URL` | `https://bajiman-admin-seven.vercel.app` |
+| `VITE_AFFILIATE_URL` | `https://bajiman-affiliate-brown.vercel.app` |
+| `VITE_BRAND_URL` | `https://bajiman-brand-five.vercel.app` |
+| `VITE_GUIDE_URL` | `https://bajiman-guide-sigma.vercel.app` |
 
 > `VITE_*` values are baked in at **build time** — redeploy after changing them.
 
@@ -88,10 +88,10 @@ Root directory: `admin`
 
 | Project | Key | Value |
 |---------|-----|-------|
-| affiliate | `VITE_API_URL` | `https://bajiman-server.vercel.app` |
+| affiliate (`bajiman-affiliate-brown`) | `VITE_API_URL` | `https://bajiman-server.vercel.app` |
 | affiliate | `VITE_CLIENT_URL` | `https://bajiman-client-one.vercel.app` |
-| Brand | `VITE_CLIENT_URL` / `VITE_REGISTER_URL` | `https://bajiman-client-one.vercel.app` |
-| Guide | `VITE_CLIENT_URL` | `https://bajiman-client-one.vercel.app` |
+| Brand (`bajiman-brand-five`) | `VITE_CLIENT_URL` / `VITE_REGISTER_URL` | `https://bajiman-client-one.vercel.app` |
+| Guide (`bajiman-guide-sigma`) | `VITE_CLIENT_URL` | `https://bajiman-client-one.vercel.app` |
 
 ---
 
