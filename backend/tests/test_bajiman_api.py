@@ -109,3 +109,64 @@ class TestCallback:
                           json={}, timeout=30)
         assert r.status_code == 200
         assert r.text.strip() == "OK", f"unexpected body: {r.text[:200]}"
+
+
+# ---------- Catalog seeding ----------
+class TestCatalog:
+    def test_play_game_lookup_11539(self):
+        r = requests.get(f"{BASE_URL}/api/global/client/play-game/11539", timeout=30)
+        assert r.status_code == 200, f"catalog lookup failed: {r.status_code} {r.text[:300]}"
+        body = r.json()
+        assert body.get("success") is True, body
+        data = body.get("data") or body.get("game") or {}
+        # find name field
+        name = data.get("name") or body.get("name") or ""
+        assert "9Wicket" in str(data) or "9Wicket" in str(body), f"9Wicket not found: {body}"
+
+    def test_game_data_has_two_games(self):
+        r = requests.get(f"{BASE_URL}/api/global/client/game-data", timeout=30)
+        assert r.status_code == 200, f"game-data failed: {r.status_code} {r.text[:300]}"
+        body = r.json()
+        # find list of games somewhere
+        import json as _j
+        blob = _j.dumps(body)
+        assert "11539" in blob, "gameUId 11539 missing from game-data"
+
+
+# ---------- CORS allow-list ----------
+class TestCORS:
+    def test_allowed_origin_reflected(self):
+        origin = "https://b34f6e99-48cd-4553-96e0-d5a31a07c743.preview.emergentagent.com"
+        r = requests.options(
+            f"{BASE_URL}/api/users/login",
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+            timeout=30,
+        )
+        assert r.status_code in (200, 204), f"preflight failed: {r.status_code} {r.text[:200]}"
+        assert r.headers.get("access-control-allow-origin") == origin
+        assert r.headers.get("access-control-allow-credentials") == "true"
+
+    def test_disallowed_origin_blocked(self):
+        origin = "https://evil.example.com"
+        r = requests.options(
+            f"{BASE_URL}/api/users/login",
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+            timeout=30,
+        )
+        # Either 500 "Not allowed by CORS" or missing ACAO header
+        acao = r.headers.get("access-control-allow-origin")
+        assert acao != origin, f"disallowed origin was reflected: {acao}"
+
+    def test_no_origin_passes(self):
+        # curl-style, no Origin header
+        r = requests.post(f"{BASE_URL}/api/callback/9wicket", json={}, timeout=30)
+        assert r.status_code == 200
+        assert r.text.strip() == "OK"

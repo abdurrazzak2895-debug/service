@@ -110,7 +110,10 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (!allowedOrigins.length) return callback(null, true);
-      return allowedOrigins.includes(origin.replace(/\/+$/, ""))
+      const norm = origin.replace(/\/+$/, "");
+      const ok = allowedOrigins.includes(norm);
+      console.log(`[CORS] origin=${JSON.stringify(origin)} norm=${JSON.stringify(norm)} allowed=${ok} list=${JSON.stringify(allowedOrigins)}`);
+      return ok
         ? callback(null, true)
         : callback(new Error("Not allowed by CORS"));
     },
