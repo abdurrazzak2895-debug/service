@@ -69,6 +69,8 @@ The supplied agent code grants access to the documentation page, but the `My acc
 
 The production credentials supplied separately were tested without being written to the repository or deployment configuration. A read-only request to `GET https://world-casino-api.com/api/v1/9w/transactions` returned HTTP 200 with provider `code=0` and an empty transaction result for test user `1001`. This confirms the existing World Casino/9Wicket API URL, token, secret length, and network connectivity; it does **not** identify or validate the SoftAPI portal launch endpoint.
 
+A live zero-balance launch attempt for game `11539` and test user `1001` reached the same World Casino API but was rejected before launch with provider code `1` because the current egress IP was not whitelisted. No game session URL was opened and no wallet-changing transfer was completed. The provider account must whitelist the actual production/VPS egress IP, or the request must be routed through the configured fixed-egress relay, before repeating the launch test.
+
 The remaining deployment inputs are:
 
 1. The exact SoftAPI launch URL from the authenticated portal. The public catalog does not provide it; the documentation labels it **Provided By IGAMING KEY**.
