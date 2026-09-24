@@ -42,6 +42,14 @@ const sourceGameUids = () =>
 const money = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 const transferId = (prefix, userId) => `${prefix}-${userId}-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
 
+const logLaunch = (fields) => {
+  console.log(JSON.stringify({
+    event: "ninewicket.launch",
+    timestamp: new Date().toISOString(),
+    ...fields,
+  }));
+};
+
 const validateUrls = () => {
   if (!/^https:\/\//i.test(callbackUrl())) throw new Error("NINEWICKET_CALLBACK_URL must be an HTTPS URL");
   if (!/^https:\/\//i.test(returnUrl()) || returnUrl().includes("?")) {
@@ -137,20 +145,26 @@ const providerErrorResponse = (error, { amount = null } = {}) => {
 };
 
 export const launchNineWicket = async (req, res) => {
+  const startedAt = Date.now();
+  const requestId = String(req.headers["x-vercel-id"] || crypto.randomUUID()).slice(0, 120);
+  const requestedGameUid = req.body?.game_uid || req.body?.gameID || req.body?.gameId || "";
   let reserved = 0;
   let session;
   try {
     validateUrls();
-    const requestedGameUid = req.body?.game_uid || req.body?.gameID || req.body?.gameId;
     const providerGameUid = resolveProviderGameUid(requestedGameUid);
     const user = await User.findById(req.user.id).select("userId balance currency isActive");
-    if (!user || user.isActive !== true) return res.status(403).json({ success: false, message: "User is not active" });
+    if (!user || user.isActive !== true) {
+      logLaunch({ requestId, gameUid: providerGameUid, durationMs: Date.now() - startedAt, httpStatus: 403, success: false, errorCategory: "inactive_user" });
+      return res.status(403).json({ success: false, message: "User is not active" });
+    }
 
     const amount = money(req.body?.amount ?? user.balance);
     // 9Wicket documents balance=0 as inquiry + launch/re-open. This allows
     // a user with an existing provider wallet to reopen it without a new
     // local-wallet deposit.
     if (!Number.isFinite(amount) || amount < 0) {
+      logLaunch({ requestId, gameUid: providerGameUid, durationMs: Date.now() - startedAt, httpStatus: 400, success: false, errorCategory: "invalid_amount" });
       return res.status(400).json({ success: false, message: "Launch amount cannot be negative" });
     }
 
@@ -162,7 +176,10 @@ export const launchNineWicket = async (req, res) => {
           { $inc: { balance: -amount } },
           { new: true },
         );
-    if (!updated) return res.status(400).json({ success: false, message: "Insufficient balance" });
+    if (!updated) {
+      logLaunch({ requestId, gameUid: providerGameUid, durationMs: Date.now() - startedAt, httpStatus: 400, success: false, errorCategory: "insufficient_balance" });
+      return res.status(400).json({ success: false, message: "Insufficient balance" });
+    }
     reserved = amount;
 
     session = await NineWicketSession.create({
@@ -191,6 +208,17 @@ export const launchNineWicket = async (req, res) => {
       },
     });
 
+    logLaunch({
+      requestId,
+      gameUid: providerGameUid,
+      durationMs: Date.now() - startedAt,
+      httpStatus: 200,
+      success: true,
+      providerCode: Number(result?.code ?? 0),
+      providerSessionPresent: Boolean(providerSessionId),
+      launchUrlReturned: Boolean(result?.data?.url),
+    });
+
     return res.json({
       success: true,
       gameUrl: result.data.url,
@@ -203,6 +231,16 @@ export const launchNineWicket = async (req, res) => {
     if (reserved) await User.findByIdAndUpdate(req.user.id, { $inc: { balance: reserved } });
     if (session?._id) await NineWicketSession.findByIdAndUpdate(session._id, { $set: { status: "failed", lastError: error.message } });
     const failure = providerErrorResponse(error, { amount: Number(req.body?.amount ?? 0) });
+    logLaunch({
+      requestId,
+      gameUid: resolveProviderGameUid(requestedGameUid),
+      durationMs: Date.now() - startedAt,
+      httpStatus: failure.status,
+      success: false,
+      providerCode: Number.isFinite(Number(error.providerResponse?.code)) ? Number(error.providerResponse.code) : null,
+      errorCategory: error.providerResponse ? "provider_rejected" : "server_or_network_error",
+      providerResponsePresent: Boolean(error.providerResponse),
+    });
     return res.status(failure.status).json(failure.body);
   }
 };
