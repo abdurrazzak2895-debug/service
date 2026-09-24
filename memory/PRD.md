@@ -69,6 +69,12 @@ get the server running, and fix why 9Wicket / World Casino game launch is not wo
      USER: add ALLOWED_ORIGINS=<5 live origins from DEPLOYMENT_ENV.md> + redeploy.
   4. Minor: catalog provider.providerIcon still references dead igamingapis.com URL
      (client-facing image fields are fine).
+- Live verification FINAL (testing_agent iter 7): 100% backend + 100% frontend on the
+  LIVE Vercel deployment. Double-slash fix confirmed (0 occurrences across 23 API
+  calls, 0 CORS console errors), login e2e OK, single launch POST, graceful Bengali
+  error for the IP-whitelist block, balance restored. STILL PENDING USER ACTIONS:
+  HEALTH_CHECK_KEY + ALLOWED_ORIGINS env vars on the Vercel server project (then
+  redeploy), and OUTBOUND_PROXY_URL static-IP proxy for real 9Wicket launches.
 - 9Wicket launches from Vercel still need OUTBOUND_PROXY_URL + provider IP whitelist.
 
 ## Session 3 (2026-09): Preview restore + live-site diagnosis + serverless DB fix
