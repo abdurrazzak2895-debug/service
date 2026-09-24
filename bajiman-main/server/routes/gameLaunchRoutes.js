@@ -4,6 +4,10 @@ import mongoose from "mongoose";
 import Game from "../models/Game.js";
 import protectUser from "../middleware/protectUser.js";
 import { launchNineWicket } from "./nineWicketRoutes.js";
+import {
+  isOracleProvider,
+  launchOracleGame,
+} from "./oracleGameLaunchRoutes.js";
 
 const router = express.Router();
 
@@ -47,11 +51,10 @@ const findGame = async (catalogGameId, gameUid) => {
 /**
  * Dispatch a launch using the provider attached to the catalog record.
  *
- * Only 9Wicket has a provider implementation in this repository today. The
- * important safety property is that KA/YGR/etc. are rejected explicitly
- * rather than being sent to /api/9wicket/launch and rendered as a black iframe.
- * Add a provider-specific handler here when that provider's launch contract is
- * configured and tested.
+ * 9Wicket uses its transfer-wallet flow. KA and YGRGaming use the historical
+ * Oracle-compatible launch contract. Unsupported providers are rejected
+ * explicitly rather than being sent to /api/9wicket/launch and rendered as a
+ * black iframe.
  */
 router.post("/launch", protectUser, async (req, res, next) => {
   try {
@@ -83,26 +86,37 @@ router.post("/launch", protectUser, async (req, res, next) => {
       });
     }
 
-    if (!isNineWicketProvider(provider)) {
-      return res.status(501).json({
-        success: false,
-        code: "PROVIDER_LAUNCH_NOT_CONFIGURED",
-        message: `Launch integration is not configured for ${clean(provider.providerName) || catalogProviderCode || "this provider"}`,
-        providerCode: catalogProviderCode,
-        providerName: clean(provider.providerName),
-      });
+    if (isNineWicketProvider(provider)) {
+      // Use the server-side catalog UID, not a client-supplied UID, after the
+      // provider has been validated. This prevents cross-provider UID routing.
+      req.body = {
+        ...req.body,
+        gameID: clean(game.gameUId),
+        game_uid: clean(game.gameUId),
+        gameId: clean(game.gameUId),
+      };
+
+      return launchNineWicket(req, res, next);
     }
 
-    // Use the server-side catalog UID, not a client-supplied UID, after the
-    // provider has been validated. This prevents cross-provider UID routing.
-    req.body = {
-      ...req.body,
-      gameID: clean(game.gameUId),
-      game_uid: clean(game.gameUId),
-      gameId: clean(game.gameUId),
-    };
+    if (isOracleProvider(provider)) {
+      req.body = {
+        ...req.body,
+        gameID: clean(game.gameUId),
+        game_uid: clean(game.gameUId),
+        gameId: clean(game.gameUId),
+      };
 
-    return launchNineWicket(req, res, next);
+      return launchOracleGame(req, res);
+    }
+
+    return res.status(501).json({
+      success: false,
+      code: "PROVIDER_LAUNCH_NOT_CONFIGURED",
+      message: `Launch integration is not configured for ${clean(provider.providerName) || catalogProviderCode || "this provider"}`,
+      providerCode: catalogProviderCode,
+      providerName: clean(provider.providerName),
+    });
   } catch (error) {
     return next(error);
   }
