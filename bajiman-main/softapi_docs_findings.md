@@ -34,12 +34,42 @@ The backend now accepts explicit SoftAPI/IGAMING aliases without breaking the ex
 
 The previously tested live catalog record was `WORLD_190` / XGaming with game UID `24178`, but the public SoftAPI catalog currently has no `brand_id=190`; the request returns `Brand not found for brand_id=190`. Therefore, the documentation does not prove that `WORLD_190` maps to a SoftAPI brand, and `24178` must not be silently remapped.
 
+The public catalog was rechecked on 2026-09-25. It contains the following confirmed mapping:
+
+| SoftAPI brand ID | Provider title | Confirmed game code | Evidence |
+|---:|---|---|---|
+| `141` | `9wickets` | `11539` | `GET /provider/brands/?brand_id=141` returned one game with `game_code=11539` |
+
+`brand_id=190` is still absent from `GET /provider/`, and `GET /provider/brands/?brand_id=190` returns `Brand not found for brand_id=190`. No public catalog evidence maps `WORLD_190`, `XGaming`, or game code `24178` to SoftAPI.
+
+## Callback/webhook audit
+
+The mounted callback paths are `/api/9wicket/callback` and `/api/callback/9wicket`. The current handler decrypts a body `payload` when present, or accepts a plaintext body, then updates the matching `NineWicketSession` balance/status and stores the raw event in `callbackEvents`.
+
+This is **not yet sufficient to claim SoftAPI bet/win webhook support**. It does not validate that an outer callback token matches the decrypted plaintext token, does not enforce an encrypted callback when SoftAPI mode is enabled, and does not settle user wallet balances or create `GameHistory` bet/win records. The existing general callback route contains wallet/history accounting for a different callback schema, but the authenticated SoftAPI documentation reviewed here did not expose enough field-level webhook details to safely map it without guessing.
+
+The VPS smoke test was not run against production credentials: the current checkout has no `.env` file and no `SOFTAPI_*`, `IGAMING_*`, `NINEWICKET_*`, or `WORLD_CASINO_*` variables in its environment. The payload test was therefore run only in no-network mode with synthetic test values.
+
+The connected Vercel backend environment was also checked by variable name. Production currently has the existing `NINEWICKET_*` and `WORLD_CASINO_*` configuration, but no `SOFTAPI_*` or `IGAMING_*` variables. No production SoftAPI payload can therefore be generated from the VPS without first configuring the SoftAPI token, 32-byte secret, and portal launch URL.
+
+## Confirmed endpoint status
+
+The public catalog endpoints are confirmed as:
+
+```text
+GET https://igamingapis.com/provider/
+GET https://igamingapis.com/provider/brands/?brand_id=141
+```
+
+The launch endpoint is **not** the public catalog URL. It is the portal-specific URL shown as **Provided By IGAMING KEY**. No authenticated portal value was available in the repository or Vercel environment, so no launch endpoint has been invented or written into production configuration. The current deployment continues to use its existing NINEWICKET/World Casino launch configuration.
+
 The remaining deployment inputs are:
 
-1. The exact SoftAPI launch URL from the authenticated portal.
-2. The valid SoftAPI brand ID for the intended provider.
-3. The intended SoftAPI `game_code` for the selected game.
-4. The matching API token and 32-byte secret configured only in Vercel environment variables.
+1. The exact SoftAPI launch URL from the authenticated portal. The public catalog does not provide it; the documentation labels it **Provided By IGAMING KEY**.
+2. The valid SoftAPI brand ID for the intended provider. For the currently confirmed 9wickets game, this is `141`.
+3. The intended SoftAPI `game_code` for the selected game. For the currently confirmed 9wickets game, this is `11539`; `24178` remains unverified.
+4. The matching API token and 32-byte secret configured only in Vercel/VPS environment variables.
+5. The exact SoftAPI callback schema and idempotency identifier before implementing wallet settlement.
 
 Until those values are confirmed, the backend retains the current provider configuration and fails safely if a SoftAPI launch URL or secret is missing.
 
