@@ -8,6 +8,7 @@
     "dev": "node --watch index.js",
     "test": "npm run test:ninewicket",
     "test:ninewicket": "node scripts/testNineWicketCrypto.js",
+    "test:softapi-payload": "node scripts/testSoftApiPayload.js",
     "test:launch-routing": "node scripts/testGameLaunchRouting.js",
     "test:oracle-launch": "node scripts/testOracleLaunch.js"
   },

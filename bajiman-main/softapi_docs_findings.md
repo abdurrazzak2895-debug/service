@@ -42,3 +42,7 @@ The remaining deployment inputs are:
 4. The matching API token and 32-byte secret configured only in Vercel environment variables.
 
 Until those values are confirmed, the backend retains the current provider configuration and fails safely if a SoftAPI launch URL or secret is missing.
+
+## Payload smoke test
+
+The server includes `npm run test:softapi-payload`, implemented by `server/scripts/testSoftApiPayload.js`. It reads the SoftAPI/IGAMING aliases, creates a fresh Unix-millisecond payload, encrypts it with AES-256-ECB and PKCS7 padding, decrypts it locally, verifies that the outer and plaintext tokens match, checks HTTPS callback/return URLs, and prints only redacted metadata. It never sends a provider request.
