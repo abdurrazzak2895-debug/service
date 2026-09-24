@@ -93,7 +93,29 @@ app.set("trust proxy", 1);
 
 connectDB();
 
-app.use(cors({ origin: true, credentials: true }));
+// Credentialed cross-origin support: the client sends withCredentials, so a
+// wildcard "*" origin is not allowed. When ALLOWED_ORIGINS is set (comma-
+// separated, e.g. your real client domains), only those origins are reflected
+// back. Requests without an Origin header (server-to-server, provider
+// callbacks, curl) always pass. When ALLOWED_ORIGINS is empty (local dev),
+// any origin is reflected.
+const allowedOrigins = String(process.env.ALLOWED_ORIGINS || "")
+  .split(",")
+  .map((o) => o.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
+
+app.use(
+  cors({
+    credentials: true,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (!allowedOrigins.length) return callback(null, true);
+      return allowedOrigins.includes(origin.replace(/\/+$/, ""))
+        ? callback(null, true)
+        : callback(new Error("Not allowed by CORS"));
+    },
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(

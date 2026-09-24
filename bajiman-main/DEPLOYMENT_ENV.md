@@ -27,6 +27,7 @@ Root directory: `server`
 | `WORLD_CASINO_9WICKET_SOURCE_GAME_UIDS` | `48341a3bf62b6dd0814d7129e7e0834b` | Legacy IDs that resolve to 9Wicket. |
 | `HEALTH_CHECK_KEY` | *(any strong random string)* | Required to call `/api/9wicket/health` in prod. Send as `x-health-key` header or `?key=`. Leave unset to keep the endpoint open (dev only). |
 | `OUTBOUND_PROXY_URL` | *(empty, or `http://user:pass@STATIC_IP:PORT`)* | Routes provider calls through a fixed-IP proxy so the provider sees a stable whitelisted IP. See "static egress" below. |
+| `ALLOWED_ORIGINS` | `https://bajiman-client-one.vercel.app,https://<admin>.vercel.app,https://<affiliate>.vercel.app` | Comma-separated list of client origins allowed to make credentialed requests. Leave **empty** only in local dev (reflects any origin). Requests without an Origin header (provider callbacks, server-to-server) always pass. |
 
 > The server also accepts `NINEWICKET_*` names directly; the `WORLD_CASINO_*`
 > names above are auto-mapped, so you only need one set.
