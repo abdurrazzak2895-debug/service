@@ -1,0 +1,33 @@
+{
+  "summary": "Frontend-only test of the new Promotions page (/promotion) and the new bKash/Nagad/Rocket brand logo tiles inside Deposit & Withdraw modals. Everything works as described: 4 promo cards render, tab filtering works, Claim (logged-out) routes to /login, and both Deposit & Withdraw modals now render real brand logo <img> tags (alt=রকেট/নগদ/বিকাশ) instead of text initials.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Deposit/Withdraw method tiles", "issues": ["The brand logo source images are 1024x1024 JPEGs (very large). They render fine in the ~64px tile but are heavy to fetch. Consider serving smaller/optimized assets or using width/height attributes so browsers can better compress render."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Promotions.jsx uses inline <style> block (~30 lines of CSS in JSX). Consider moving to a CSS module for consistency with the rest of the app.",
+    "Promotions.jsx claim() sends authed users to /deposit but there is no /deposit route (deposit is a modal opened from header). Logged-in Claim will navigate to a route that likely resolves to the RootLayout fallback — verify the intended UX (open Deposit modal instead of navigating).",
+    "Payment method logo images are 1024x1024 source JPEGs used at 60-80px tile size. Serve responsive/smaller assets."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100%"},
+  "test_credentials": "demo01 / demo1234 (works, wallet ৳2,000)",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Header note in review said main wallet label is 'মেইন ওয়ালেট' but actual UI shows 'গেইম ওয়ালেট ৳2,000.00'. Also the login submit button is the 2nd get_by_role('button', name='লগইন') match (nth(1)). The user avatar button sits around x=1461-1493 in a 1920px viewport (NOT at the right edge which is the language switcher flag at ~1513). Withdraw menu item text is 'উইথড্রয়াল' (Unicode ‌ withdrawal) — use regex text=/উইথ/ for reliable matching. Promotions filtering uses category values 'Welcome Offer', 'Slots', 'Live Casino', 'Sports' (seed data returns exactly 4 promos, 1 per category).",
+  "verified_flows": [
+    "/promotion page renders promo-hero, 5 category tabs (all/Welcome Offer/Slots/Live Casino/Sports), and 4 promo cards each with image, badge, title, description, promo-claim-btn",
+    "Clicking 'ওয়েলকাম' tab filters to 1 Welcome Offer card; 'স্লট' filters to 1 Slots card",
+    "Clicking 'এখনই দাবি করুন' while logged out navigates to /login",
+    "Deposit modal (top-right ডিপোজিট button) shows 3 payment tiles each with an <img alt='রকেট'|'নগদ'|'বিকাশ'> brand logo",
+    "Withdraw modal (avatar dropdown → উইথড্রয়াল) shows the same 3 brand-logo tiles",
+    "Backend /api/promotions/active/list and payment logoUrls verified by frontend rendering"
+  ]
+}

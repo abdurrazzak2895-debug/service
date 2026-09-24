@@ -7,22 +7,22 @@ const WhyUs = () => {
 
   const content = useMemo(() => {
     return {
-      title: isBangla ? "কেন BABU88?" : "Why BABU88?",
+      title: isBangla ? "কেন MARBAJI?" : "Why MARBAJI?",
       items: [
         {
           title: isBangla
             ? "সর্বোচ্চ এজেন্ট কমিশন"
             : "Highest Agent Commission",
           desc: isBangla
-            ? "BABU88 এজেন্ট বাজারের সর্বোচ্চ কমিশন অফার করে! আমাদের সাথে সর্বদা বিজয়ী, যে কোনো প্রদানকারী যেখানেই থাকুন।"
-            : "BABU88 offers the highest agent commission in the market! Stay ahead with us, wherever you are.",
+            ? "MARBAJI এজেন্ট বাজারের সর্বোচ্চ কমিশন অফার করে! আমাদের সাথে সর্বদা বিজয়ী, যে কোনো প্রদানকারী যেখানেই থাকুন।"
+            : "MARBAJI offers the highest agent commission in the market! Stay ahead with us, wherever you are.",
           Icon: DollarSign,
         },
         {
           title: isBangla ? "বিশ্বস্ত ব্র্যান্ড" : "Trusted Brand",
           desc: isBangla
-            ? "BABU88 হল একটি প্রিমিয়াম ক্রিকেট এক্সচেঞ্জ এবং ভারতের বৃহত্তম অনলাইন ক্যাসিনো প্ল্যাটফর্ম। ১০০ টিরও বেশি লাইভ ক্যাসিনো, স্লট এবং ছয়াল গেম রয়েছে।"
-            : "BABU88 is a premium cricket exchange and one of the largest online casino platforms. Enjoy 100+ live casino, slots, and more games.",
+            ? "MARBAJI হল একটি প্রিমিয়াম ক্রিকেট এক্সচেঞ্জ এবং ভারতের বৃহত্তম অনলাইন ক্যাসিনো প্ল্যাটফর্ম। ১০০ টিরও বেশি লাইভ ক্যাসিনো, স্লট এবং ছয়াল গেম রয়েছে।"
+            : "MARBAJI is a premium cricket exchange and one of the largest online casino platforms. Enjoy 100+ live casino, slots, and more games.",
           Icon: Lock,
         },
         {
