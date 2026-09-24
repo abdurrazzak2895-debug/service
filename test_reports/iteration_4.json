@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 4 covers the two additions from this round: (1) games catalog seeded with 9Wicket (brand 141, gameUId 11539) and (2) CORS locked to an ALLOWED_ORIGINS allow-list. All 7 backend pytest cases pass and the full UI flow (login as demo01 -> navigate /play-game/11539 -> iframe with real provider URL) works with exactly ONE POST /api/9wicket/launch.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_9wicket_regression.py",
+    "/app/test_reports/pytest/iteration_4.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "CORS allow-list works correctly: legit preview origin gets a specific ACAO echoed back (not '*'), evil.example.com is rejected (server errors out with 500 rather than echoing the origin). No-Origin provider callbacks still pass (verified: POST /api/callback/9wicket -> 200 OK).",
+    "Cloudflare rewrites the incoming Origin from *.preview.emergentagent.com to *.cluster-5.preview.emergentcf.cloud before Express sees it; ensure both hostnames stay in ALLOWED_ORIGINS. Currently working end-to-end.",
+    "Catalog seed produced the expected result: GET /api/global/client/play-game/11539 -> 200 with name '9Wicket'; lobby renders a '9Wicket' game card (visible in the seeded 'সব গেম' grid alongside the '9wickets' provider chip).",
+    "PlayGame single-fire guard from iteration 3 still holds after the catalog change: launch fired exactly once, response 200, iframe src = https://igamingapis.live/9w/play?t=... ."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_9wicket_regression.py"
+  ],
+  "success_rate": {"backend": "100% (7/7)", "frontend": "100%"},
+  "test_credentials": "demo01 / demo1234 (re-seeded via server/scripts/seedTestUser.js at start of run; balance 2000 BDT).",
+  "seed_data_creation": "Re-ran seedTestUser.js to reset demo01 balance to 2000 before UI test.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "UI login recipe (verified working): (1) goto /, wait ~4s. (2) click header button with text 'লগইন'. (3) fill the two visible modal inputs (top->bottom) with demo01 / demo1234. (4) among all buttons with text 'লগইন' pick the one whose bounding_box.y > 200 (that is the modal submit; the header lookalike sits at y~12). (5) wait 4s; balance '2000' appears in DOM. Then goto /play-game/11539 and wait ~20s for launch + iframe. Manually injecting token/user into localStorage did NOT authenticate the app (context uses different keys) - use the UI flow. Backend regression file /app/backend/tests/test_9wicket_regression.py is stable and re-runnable; treat as regression suite for future iterations.",
+  "verification_evidence": {
+    "backend_pytest": "7 passed in 8.95s",
+    "lobby_9Wicket_card_visible": true,
+    "lobby_9wickets_provider_chip_visible": true,
+    "post_launch_call_count": 1,
+    "launch_response_status": 200,
+    "launch_response_gameUrl": "https://igamingapis.live/9w/play?t=7b1e0304bfaf912d4abeaedc8ccf8b259bf343a6110b3eed",
+    "iframe_rendered": true,
+    "cors_allowed_origin_ACAO": "https://b34f6e99-48cd-4553-96e0-d5a31a07c743.cluster-5.preview.emergentcf.cloud",
+    "cors_evil_origin_blocked": true,
+    "callback_no_origin_ok": true,
+    "login_api_status": 200,
+    "catalog_play_game_11539_name": "9Wicket"
+  }
+}
