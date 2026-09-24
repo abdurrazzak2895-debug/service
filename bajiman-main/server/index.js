@@ -84,6 +84,7 @@ import oracleSyncRoutes from "./routes/oracleSyncRoutes.js";
 import nineWicketRoutes from "./routes/nineWicketRoutes.js";
 import gameLaunchRoutes from "./routes/gameLaunchRoutes.js";
 import providerRelayRoutes from "./routes/providerRelayRoutes.js";
+import countryRoutes from "./routes/countryRoutes.js";
 
 dotenv.config();
 
@@ -275,6 +276,9 @@ app.use("/api/callback/9wicket", nineWicketRoutes);
 
 // admin pannel Dashboard Routes
 app.use("/api/dashboard", dashboardRoutes);
+
+// Public country / dial-code list (server-side, avoids browser CORS)
+app.use("/api/countries", countryRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

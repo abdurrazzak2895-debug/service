@@ -293,28 +293,18 @@ const RegisterModal = ({ open, onClose, onLoginClick }) => {
 
     const loadCountries = async () => {
       try {
-        const res = await fetch(
-          "https://restcountries.com/v3.1/all?fields=name,cca2,idd,flags",
-        );
-        const data = await res.json();
+        const res = await api.get("/api/countries");
+        const data = res?.data?.data || [];
 
         const list = (Array.isArray(data) ? data : [])
-          .map((c) => {
-            const root = c?.idd?.root || "";
-            const suffix = c?.idd?.suffixes?.[0] || "";
-            const code = `${root}${suffix}`.trim();
-
-            return {
-              name: c?.name?.common || "",
-              code,
-              cca2: c?.cca2 || "",
-              flag:
-                c?.flags?.png ||
-                `https://flagcdn.com/w40/${String(
-                  c?.cca2 || "",
-                ).toLowerCase()}.png`,
-            };
-          })
+          .map((c) => ({
+            name: c?.name || "",
+            code: c?.code || "",
+            cca2: c?.cca2 || "",
+            flag:
+              c?.flag ||
+              `https://flagcdn.com/w40/${String(c?.cca2 || "").toLowerCase()}.png`,
+          }))
           .filter((item) => item.name && item.code && item.cca2)
           .sort((a, b) => a.name.localeCompare(b.name));
 
