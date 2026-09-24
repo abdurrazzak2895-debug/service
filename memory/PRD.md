@@ -32,7 +32,17 @@ get the server running, and fix why 9Wicket / World Casino game launch is not wo
 - Client builds successfully (`yarn build` → dist OK).
 
 ## What was changed
-- Added `server/.env` (gitignored). No source code changes required — code is healthy.
+- Added `server/.env` (gitignored).
+- Added `GET /api/9wicket/health` (config flags + live provider reachability; `?ping=false` for config only). File: `server/routes/nineWicketRoutes.js`.
+- Added `server/scripts/seedTestUser.js` (idempotent demo player + JWT printer, optional `RUN_LAUNCH=true`).
+- Added `bajiman-main/DEPLOYMENT_ENV.md` (exact Vercel env var lists for server/client/admin/etc).
+
+## UPDATE (2026-06): 9Wicket now works END-TO-END
+- The IP is now accepted by the provider. `/api/9wicket/health` reports
+  `ipWhitelisted: true`, "Inquiry successful". A full authenticated launch
+  (demo01, amount 10) returned a real playable game URL + session_id — balance
+  transferred 0→10 on the provider side. The earlier "IP not whitelisted" block
+  is resolved.
 
 ## Backlog / Next steps (mostly infra, provider-side)
 - Whitelist a STATIC egress IP with the World Casino admin. For Vercel, route outbound

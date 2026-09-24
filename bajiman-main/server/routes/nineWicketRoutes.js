@@ -3,7 +3,7 @@ import crypto from "node:crypto";
 import User from "../models/User.js";
 import NineWicketSession from "../models/NineWicketSession.js";
 import protectUser from "../middleware/protectUser.js";
-import { decryptPayload, getTransactions, postTransfer } from "../services/nineWicketService.js";
+import { decryptPayload, getTransactions, postTransfer, configSummary } from "../services/nineWicketService.js";
 
 const router = express.Router();
 const configuredGameUid = () =>
@@ -206,6 +206,101 @@ export const launchNineWicket = async (req, res) => {
     return res.status(failure.status).json(failure.body);
   }
 };
+
+// Diagnostics: config + live provider reachability at a glance.
+// GET /api/9wicket/health           -> also pings the provider
+// GET /api/9wicket/health?ping=false -> config only, no network call
+router.get("/health", async (req, res) => {
+  const summary = configSummary();
+  const cb = callbackUrl();
+  const rt = returnUrl();
+
+  const config = {
+    apiBase: summary.apiBase,
+    hasToken: summary.hasToken,
+    secretConfigured: summary.secretConfigured,
+    gameUid: configuredGameUid(),
+    symbol: symbol(),
+    currency: currency(),
+    language: language(),
+    callbackUrl: cb,
+    returnUrl: rt,
+    callbackUrlValid: /^https:\/\//i.test(cb),
+    returnUrlValid: /^https:\/\//i.test(rt) && !rt.includes("?"),
+    sourceGameUids: [...sourceGameUids()],
+  };
+
+  const configOk =
+    config.hasToken &&
+    config.secretConfigured &&
+    config.callbackUrlValid &&
+    config.returnUrlValid;
+
+  const shouldPing = String(req.query.ping ?? "true").toLowerCase() !== "false";
+
+  let providerCheck = {
+    attempted: false,
+    reachable: null,
+    ok: null,
+    code: null,
+    message: null,
+    ipWhitelisted: null,
+  };
+
+  if (shouldPing && config.hasToken && config.secretConfigured) {
+    providerCheck.attempted = true;
+    try {
+      const result = await postTransfer(
+        plainFor({
+          user: { userId: "healthcheck", _id: "000000000000000000000000" },
+          balance: 0,
+          transferId: transferId("9w-health", 0),
+        }),
+      );
+      providerCheck = {
+        attempted: true,
+        reachable: true,
+        ok: true,
+        code: Number(result?.code ?? 0),
+        message: result?.msg || "ok",
+        ipWhitelisted: true,
+      };
+    } catch (error) {
+      const provider = error.providerResponse || {};
+      const message = String(provider.msg || error.message || "");
+      providerCheck = {
+        attempted: true,
+        // A structured provider response means the network round-trip succeeded.
+        reachable: Boolean(error.providerResponse),
+        ok: false,
+        code: provider.code ?? null,
+        message,
+        ipWhitelisted: /not whitelisted/i.test(message) ? false : null,
+      };
+    }
+  } else if (!config.hasToken || !config.secretConfigured) {
+    providerCheck.message = "Skipped — token/secret not configured";
+  } else {
+    providerCheck.message = "Skipped — ping=false";
+  }
+
+  const healthy =
+    configOk && (!providerCheck.attempted || providerCheck.ok === true);
+
+  return res.status(healthy ? 200 : 503).json({
+    success: healthy,
+    status: healthy ? "ok" : "degraded",
+    provider: "9wicket",
+    config,
+    providerCheck,
+    hint:
+      providerCheck.ipWhitelisted === false
+        ? "Provider rejected this server's outbound IP. Whitelist the egress IP with the World Casino admin (Vercel serverless IPs are dynamic — use a static-IP proxy/host)."
+        : !configOk
+          ? "Fix the config flags above (token/secret/callback/return URL)."
+          : "9Wicket config and provider reachability look healthy.",
+  });
+});
 
 router.post("/launch", protectUser, launchNineWicket);
 
