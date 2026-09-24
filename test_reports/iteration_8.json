@@ -1,0 +1,38 @@
+{
+  "summary": "Frontend E2E testing of Marbaji/Bajiman lobby clone. Home lobby, Login modal, Register modal, and Games page all work correctly. Login with demo01/demo1234 succeeds — toast success, navbar switches to logged-in state (balance 2,000 BDT, Deposit/Rebate chips, profile avatar). Logout flow could NOT be verified because clicking the top-right profile avatar does not open a visible dropdown menu with a লগআউট/Logout option — clicking that region actually collapsed/blanked content (potential sidebar toggle intercept). No data-testid attributes anywhere in the app, making automation and future regression fragile.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Navbar/Profile menu (Navber.jsx)", "issue": "After successful login, clicking the profile avatar (top-right circular icon next to the balance/Deposit chips) does not open any visible account dropdown. No লগআউট/Logout text is rendered anywhere on the page, so the user has no discoverable way to log out via the UI in the web preview.", "selector": "header button (avatar/profile icon at ~x=1237,y=32)", "priority": "HIGH"},
+      {"component": "RegisterModal.jsx", "issue": "loadCountries() calls https://restcountries.com/v3.1/all?fields=... from the browser and is blocked by CORS (no Access-Control-Allow-Origin). Country/flag/dial-code dropdown will be empty for real users. Should be proxied through the Express backend or bundled as a static JSON.", "selector": "RegisterModal country select", "priority": "MEDIUM"},
+      {"component": "Global", "issue": "No data-testid attributes on any interactive elements (Login/Signup/Logout buttons, modal inputs, game cards, nav items). Automation had to rely on Bengali visible text, which is brittle.", "selector": "n/a", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [
+      {"flow": "Logout", "issue": "Cannot complete logout via UI — no menu opens on avatar click; no visible logout control after login.", "affected_selectors": ["profile avatar in navbar"]}
+    ],
+    "design_issues": [
+      {"screen": "Lobby (MarbajiLobby)", "issues": ["Sidebar collapse toggle sits at top-left and, when clicked, whitewashes the lobby (blank main area) — likely a collapsed-state style bug where content isn't re-rendered/visible until reload."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Fix logout: expose a visible account dropdown (or a Logout button) when clicking the profile avatar; ensure state cleanly returns navbar to Sign Up / Login.",
+    "Proxy restcountries.com through the Express backend (e.g. GET /api/global/countries) to avoid client-side CORS failures in RegisterModal.",
+    "Add data-testid to key elements: navbar-login-btn, navbar-signup-btn, navbar-profile, navbar-logout, login-username, login-password, login-submit, register-*, games-card, sidebar-toggle.",
+    "Investigate the sidebar collapse behavior that empties the main content area after clicking the top-left toggle."
+  ],
+  "critical_code_review_comments": [
+    "External API call to restcountries.com in RegisterModal violates single-source-of-truth: should be a backend endpoint using server-side fetch to avoid CORS and outbound-network flakiness.",
+    "Auth is modal-only but the app still ships /login and /register route stubs — either wire them to open the modals or remove to reduce confusion.",
+    "No data-testid across the app is a maintainability gap; add for auth, nav, games grid, and modals at minimum.",
+    "SiteLoader keeps the app blocked until /api/global/client/site-data + game-data both resolve — a single flaky backend call will indefinitely gate the lobby. Add a timeout + fallback."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested (frontend-only per request)", "frontend": "80% (4/5 flows verified — logout blocked by UI bug)"},
+  "test_credentials": "demo01 / demo1234 (seeded, works)",
+  "seed_data_creation": "none (used pre-seeded demo user + demo catalog)",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Home lobby, Login modal, Register modal, and /games all confirmed working on https://e2308627-bf54-41fe-b0ee-1c3f39d3ace5.preview.emergentagent.com. Login submit button is the Bengali 'লগইন' at y>100 (the y<=100 one is the navbar trigger). Register modal opens on 'সাইন আপ' click and shows currency/username/password/phone/OTP/refer fields (do not submit real registration). Logout is the outstanding item — profile avatar click currently yields no dropdown; investigate Navber.jsx account-menu rendering condition. RegisterModal has a CORS error hitting restcountries.com — non-fatal but breaks country picker.",
+  "rca of the issue": "Logout UI bug: Navber.jsx likely renders the logged-in account chip (balance + avatar) but the click handler either targets a different element (sidebar toggle) or the dropdown menu is rendered off-screen / hidden with display:none. Reproduction: 1) load site, wait for lobby; 2) click লগইন, enter demo01/demo1234, submit; 3) once balance 2,000 BDT appears, click the circular profile icon at the top-right — no menu appears. Mitigation: add an explicit dropdown component (e.g. shadcn DropdownMenu) bound to the avatar button with a Logout item that dispatches the logout reducer + clears the auth token, and add data-testid='navbar-profile' + 'navbar-logout'."
+}

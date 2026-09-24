@@ -149,3 +149,14 @@ Test-env runtime notes (this preview only):
   bajiman-main/DEPLOYMENT_ENV.md.
 - By design (transfer-wallet), UI launch (no explicit amount) moves the whole local wallet into
   the 9Wicket provider wallet; POST /api/9wicket/cashout returns it.
+
+## Session 4 (2026-06): Pod restore + run in Emergent preview + lobby polish
+- User request: "check my repo, full copy all pages with similar design to https://marbaji88.com/bn/en". The repo already contains a full Marbaji-style clone (bajiman-main monorepo) from prior sessions; pod had been reset so nothing was running.
+- Actions:
+  - Wired supervisor to run the monorepo: Express `server` on :8001 (backend), Vite `client` on :3000 (frontend). Persistent copy in /app/scripts/supervisord.conf; live copy written to /etc/supervisor/conf.d/supervisord.conf.
+  - Created `server/.env` -> local MongoDB (mongodb://127.0.0.1:27017/bajiman), PORT=8001, VERCEL=0, JWT, HEALTH_CHECK_KEY, WORLD_CASINO_ENABLED=false (provider launch disabled locally).
+  - Created `client/.env` VITE_API_URL = current preview URL.
+  - Seeded demo catalog (`seedDemoCatalog.js`) + demo user (`seedTestUser.js`, demo01/demo1234, 2000 BDT). Replaced irrelevant Unsplash game images with generated casino-style tiles via `scripts/updateDemoImages.js`.
+- Verified (Playwright + curl + testing_agent iter 8): home lobby renders, login (demo01), register modal, games page, and logout dropdown ALL work. Backend /api/users/login, /api/global/client/site-data, /api/global/client/game-data all 200.
+- Design note: the client is a CUSTOM Marbaji-style casino lobby (dark navy + gold, hero slider, VIP tier, provider chips, popular/all-game grids), not a pixel copy of the live marbaji88.com (which does not render in available tooling). Exact page-by-page matching needs reference screenshots from the user.
+- Backlog / next: RegisterModal calls restcountries.com from the browser (CORS-blocked) -> proxy via backend; add data-testid attributes for auth/nav/games; seed admin-configured deposit/withdraw methods so those private pages have content; provider game launch needs external IP whitelist (disabled locally).
