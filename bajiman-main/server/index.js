@@ -227,6 +227,8 @@ app.use("/api/global/client", globalGameClientRoutes);
 app.use("/api/admin/game-api-key", gameApiKeyRoutes);
 app.use("/api/admin/oracle-sync", oracleSyncRoutes);
 app.use("/api/9wicket", nineWicketRoutes);
+// Backward-compatible callback path used by WORLD_CASINO_* configuration.
+app.use("/api/callback/9wicket", nineWicketRoutes);
 
 // admin pannel Dashboard Routes
 app.use("/api/dashboard", dashboardRoutes);

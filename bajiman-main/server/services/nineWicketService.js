@@ -3,9 +3,17 @@ import { decryptPayload, encryptPayload } from "./nineWicketCrypto.js";
 
 export { decryptPayload, encryptPayload };
 
-const apiUrl = () => String(process.env.NINEWICKET_API_BASE || "https://world-casino-api.com/api/v1").replace(/\/+$/, "");
-const token = () => String(process.env.NINEWICKET_TOKEN || "").trim();
-const secret = () => String(process.env.NINEWICKET_SECRET || "");
+const apiUrl = () =>
+  String(
+    process.env.NINEWICKET_API_BASE ||
+      process.env.WORLD_CASINO_API_BASE ||
+      process.env.WORLD_CASINO_API_URL ||
+      "https://world-casino-api.com/api/v1",
+  ).replace(/\/+$/, "");
+const token = () =>
+  String(process.env.NINEWICKET_TOKEN || process.env.WORLD_CASINO_TOKEN || "").trim();
+const secret = () =>
+  String(process.env.NINEWICKET_SECRET || process.env.WORLD_CASINO_SECRET || "");
 
 const requireConfig = () => {
   if (!token()) throw new Error("NINEWICKET_TOKEN is missing");

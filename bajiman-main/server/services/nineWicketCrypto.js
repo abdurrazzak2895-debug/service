@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
-const getSecret = () => String(process.env.NINEWICKET_SECRET || "");
+const getSecret = () =>
+  String(process.env.NINEWICKET_SECRET || process.env.WORLD_CASINO_SECRET || "");
 
 const requireSecret = () => {
   const value = getSecret();

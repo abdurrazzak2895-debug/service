@@ -6,12 +6,39 @@ import protectUser from "../middleware/protectUser.js";
 import { decryptPayload, getTransactions, postTransfer } from "../services/nineWicketService.js";
 
 const router = express.Router();
-const configuredGameUid = () => String(process.env.NINEWICKET_GAME_UID || "11539").trim();
-const symbol = () => String(process.env.NINEWICKET_SYMBOL || "9W").trim();
-const callbackUrl = () => String(process.env.NINEWICKET_CALLBACK_URL || "").trim();
-const returnUrl = () => String(process.env.NINEWICKET_RETURN_URL || "").trim();
-const currency = () => String(process.env.NINEWICKET_CURRENCY || "BDT").trim().toUpperCase();
-const language = () => String(process.env.NINEWICKET_LANGUAGE || "en").trim();
+const configuredGameUid = () =>
+  String(
+    process.env.NINEWICKET_GAME_UID ||
+      process.env.WORLD_CASINO_9WICKET_GAME_UID ||
+      "11539",
+  ).trim();
+const symbol = () =>
+  String(process.env.NINEWICKET_SYMBOL || process.env.WORLD_CASINO_9WICKET_SYMBOL || "9W").trim();
+const callbackUrl = () =>
+  String(
+    process.env.NINEWICKET_CALLBACK_URL || process.env.WORLD_CASINO_CALLBACK_URL || "",
+  ).trim();
+const returnUrl = () =>
+  String(
+    process.env.NINEWICKET_RETURN_URL || process.env.WORLD_CASINO_RETURN_URL || "",
+  ).trim();
+const currency = () =>
+  String(
+    process.env.NINEWICKET_CURRENCY || process.env.WORLD_CASINO_CURRENCY || "BDT",
+  )
+    .trim()
+    .toUpperCase();
+const language = () =>
+  String(
+    process.env.NINEWICKET_LANGUAGE || process.env.WORLD_CASINO_LANGUAGE || "en",
+  ).trim();
+const sourceGameUids = () =>
+  new Set(
+    String(process.env.WORLD_CASINO_9WICKET_SOURCE_GAME_UIDS || "")
+      .split(",")
+      .map((value) => value.trim().toLowerCase())
+      .filter(Boolean),
+  );
 const money = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 const transferId = (prefix, userId) => `${prefix}-${userId}-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
 
@@ -33,6 +60,7 @@ const numericUserId = (user) => {
 const resolveProviderGameUid = (value) => {
   const requested = String(value || "").trim();
   if (!requested) return configuredGameUid();
+  if (sourceGameUids().has(requested.toLowerCase())) return configuredGameUid();
   if (/^[a-f0-9]{24}$/i.test(requested)) return configuredGameUid();
   if (/^(sports|casino|slot|fishing|hot|football|cricket)-/i.test(requested)) return configuredGameUid();
   return requested;
@@ -242,7 +270,7 @@ router.get("/session-transactions", protectUser, async (req, res) => {
   } catch (error) { return res.status(502).json({ success: false, message: error.message, provider: error.providerResponse || null }); }
 });
 
-router.post("/callback", async (req, res) => {
+const handleCallback = async (req, res) => {
   try {
     const event = req.body?.payload ? decryptPayload(req.body.payload) : req.body || {};
     const sessionId = Number(event.session_id || 0);
@@ -256,6 +284,10 @@ router.post("/callback", async (req, res) => {
     console.error("9Wicket callback error:", error.message);
     return res.status(200).send("OK");
   }
-});
+};
+
+router.post("/callback", handleCallback);
+// Compatibility with WORLD_CASINO_CALLBACK_URL=/api/callback/9wicket.
+router.post("/", handleCallback);
 
 export default router;
