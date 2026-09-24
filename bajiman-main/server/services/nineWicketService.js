@@ -55,15 +55,43 @@ const proxyConfig = () => {
   }
 };
 
+// Optional relay: when PROVIDER_RELAY_URL is set (e.g. on Vercel, whose egress
+// IPs are dynamic), provider calls are forwarded to a whitelisted host running
+// the /api/provider-relay route, which performs the actual provider call.
+const relayUrl = () =>
+  String(process.env.PROVIDER_RELAY_URL || "").trim().replace(/\/+$/, "");
+const relayKey = () => String(process.env.PROVIDER_RELAY_KEY || "").trim();
+
+const send = async (method, path, { body, params } = {}) => {
+  const relay = relayUrl();
+  if (relay) {
+    const r = await axios.post(
+      relay,
+      { method, path, body, params },
+      {
+        headers: { "Content-Type": "application/json", "x-relay-key": relayKey() },
+        timeout: 25000,
+        proxy: proxyConfig(),
+      },
+    );
+    return r.data || {};
+  }
+  const url = `${apiUrl()}${path}`;
+  const r =
+    method === "GET"
+      ? await axios.get(url, { params, timeout: 20000, proxy: proxyConfig() })
+      : await axios.post(url, body, {
+          headers: { "Content-Type": "application/json" },
+          timeout: 20000,
+          proxy: proxyConfig(),
+        });
+  return r.data || {};
+};
+
 export const postTransfer = async (plain) => {
   requireConfig();
   const payload = { ...plain, token: token(), timestamp: Number(plain.timestamp || Date.now()) };
-  const response = await axios.post(apiUrl(), { token: token(), payload: encryptPayload(payload) }, {
-    headers: { "Content-Type": "application/json" },
-    timeout: 20000,
-    proxy: proxyConfig(),
-  });
-  const data = response.data || {};
+  const data = await send("POST", "", { body: { token: token(), payload: encryptPayload(payload) } });
   if (Number(data.code) !== 0) {
     const error = new Error(data.msg || "9Wicket transfer failed");
     error.providerResponse = data;
@@ -74,12 +102,7 @@ export const postTransfer = async (plain) => {
 
 export const getTransactions = async (path, params) => {
   requireConfig();
-  const response = await axios.get(`${apiUrl()}${path}`, {
-    params: { ...params, token: token() },
-    timeout: 20000,
-    proxy: proxyConfig(),
-  });
-  const data = response.data || {};
+  const data = await send("GET", path, { params: { ...params, token: token() } });
   if (Number(data.code) !== 0) {
     const error = new Error(data.msg || "9Wicket history request failed");
     error.providerResponse = data;
@@ -93,4 +116,5 @@ export const configSummary = () => ({
   hasToken: Boolean(token()),
   secretConfigured: Buffer.byteLength(secret(), "utf8") === 32,
   outboundProxyConfigured: proxyConfig() !== false,
+  relayConfigured: Boolean(relayUrl()),
 });

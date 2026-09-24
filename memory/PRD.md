@@ -78,6 +78,19 @@ get the server running, and fix why 9Wicket / World Casino game launch is not wo
 - 9Wicket launches from Vercel still need OUTBOUND_PROXY_URL + provider IP whitelist.
 
 ## Session 3 (2026-09): Preview restore + live-site diagnosis + serverless DB fix
+- FULL SUITE NOW GREEN: 21/21 pytest pass from this pod — the provider now accepts
+  this pod's IP (34.16.56.64); real launch+cashout round-trip verified.
+- NEW FEATURE — provider relay: `server/routes/providerRelayRoutes.js`
+  (POST /api/provider-relay, guarded by RELAY_SHARED_SECRET header x-relay-key,
+  path-locked to WORLD_CASINO_API_URL) + relay mode in nineWicketService
+  (PROVIDER_RELAY_URL / PROVIDER_RELAY_KEY forward provider calls through a
+  whitelisted host). Verified locally: 401 without key, real provider round-trip
+  through the relay, configSummary.relayConfigured flag, health shows it.
+- For LIVE 9Wicket launches, user must: (1) Save to Github, (2) add Vercel server
+  env PROVIDER_RELAY_URL=https://<preview-pod>/api/provider-relay +
+  PROVIDER_RELAY_KEY=relay-9w-4f8a2c7e1b9d3456f0a8c2e4b6d19753, (3) redeploy.
+  NOTE: preview pod is ephemeral (IP/URL can change on restart) — demo-grade;
+  production should use a VPS relay (documented in DEPLOYMENT_ENV.md Option 1).
 - Pod was reset: recreated `server/.env` (values from DEPLOYMENT_ENV.md, PORT=8001,
   HEALTH_CHECK_KEY=bajiman-health-2026 matching the regression suite), repointed
   `client/.env` VITE_API_URL at the preview URL, reinstalled node_modules, and

@@ -82,6 +82,7 @@ import wheelTermsConditionRoutes from "./routes/wheelTermsConditionRoutes.js";
 import downloadHeaderRoutes from "./routes/downloadHeaderRoutes.js";
 import oracleSyncRoutes from "./routes/oracleSyncRoutes.js";
 import nineWicketRoutes from "./routes/nineWicketRoutes.js";
+import providerRelayRoutes from "./routes/providerRelayRoutes.js";
 
 dotenv.config();
 
@@ -265,6 +266,7 @@ app.use("/api/global/client", globalGameClientRoutes);
 app.use("/api/admin/game-api-key", gameApiKeyRoutes);
 app.use("/api/admin/oracle-sync", oracleSyncRoutes);
 app.use("/api/9wicket", nineWicketRoutes);
+app.use("/api/provider-relay", providerRelayRoutes);
 // Backward-compatible callback path used by WORLD_CASINO_* configuration.
 app.use("/api/callback/9wicket", nineWicketRoutes);
 

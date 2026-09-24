@@ -233,6 +233,7 @@ router.get("/health", healthGuard, async (req, res) => {
     hasToken: summary.hasToken,
     secretConfigured: summary.secretConfigured,
     outboundProxyConfigured: summary.outboundProxyConfigured,
+    relayConfigured: summary.relayConfigured,
     gameUid: configuredGameUid(),
     symbol: symbol(),
     currency: currency(),

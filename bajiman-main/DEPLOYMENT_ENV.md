@@ -99,8 +99,29 @@ Root directory: `admin`
 
 The provider whitelists by **source IP**. Vercel serverless egress IPs are
 **dynamic**, so a launch can start failing with `IP <x> not whitelisted` at any
-time. The server now supports routing all provider calls through a fixed-IP
-proxy:
+time. Three options, pick ONE:
+
+### Option 1 — Provider relay through a whitelisted host (no extra infra)
+
+The server ships an authenticated forward-relay at `POST /api/provider-relay`.
+Run the same server code on any host whose IP is whitelisted at the provider
+(e.g. a VPS, or the Emergent preview pod) with `RELAY_SHARED_SECRET` set, then
+on the **Vercel server project** add:
+
+|| Key | Value |
+||-----|-------|
+|| `PROVIDER_RELAY_URL` | `https://<whitelisted-host>/api/provider-relay` |
+|| `PROVIDER_RELAY_KEY` | *(same value as that host's `RELAY_SHARED_SECRET`)* |
+
+All provider calls (launch, inquiry, cashout, transactions) are then forwarded
+through the whitelisted host. The relay is path-locked to `WORLD_CASINO_API_URL`
+and key-guarded, so it cannot be abused as an open proxy. Health shows
+`config.relayConfigured: true` when active.
+
+> Emergent preview pods change IP on restart — fine for demos, not for
+> production. Use a VPS for a permanent relay.
+
+### Option 2 — Static-IP HTTP proxy
 
 1. Stand up (or rent) an HTTP proxy that has a **static outbound IP**
    (e.g. a small VPS running Squid/tinyproxy, or a managed static-egress /
@@ -110,10 +131,12 @@ proxy:
    `http://user:pass@STATIC_IP:8080` (or `https://…`). Leave it empty to send
    traffic directly (works only where the host IP itself is whitelisted).
 
-Alternatively, host the Express server on a VPS/container with its own stable
+### Option 3 — Move the backend off Vercel
+
+Host the Express server on a VPS/container with its own stable
 IP instead of Vercel serverless, and whitelist that IP directly.
 
 Verify anytime with:
 `GET https://bajiman-server.vercel.app/api/9wicket/health` (with the
-`x-health-key` header). Check `config.outboundProxyConfigured` and
-`providerCheck.ipWhitelisted`.
+`x-health-key` header). Check `config.relayConfigured` /
+`config.outboundProxyConfigured` and `providerCheck.ipWhitelisted`.
