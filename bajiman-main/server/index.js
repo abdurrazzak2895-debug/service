@@ -82,6 +82,7 @@ import wheelTermsConditionRoutes from "./routes/wheelTermsConditionRoutes.js";
 import downloadHeaderRoutes from "./routes/downloadHeaderRoutes.js";
 import oracleSyncRoutes from "./routes/oracleSyncRoutes.js";
 import nineWicketRoutes from "./routes/nineWicketRoutes.js";
+import gameLaunchRoutes from "./routes/gameLaunchRoutes.js";
 import providerRelayRoutes from "./routes/providerRelayRoutes.js";
 
 dotenv.config();
@@ -195,8 +196,10 @@ app.use("/api/hot-games", hotGameRoutes);
 
 // game Play system
 app.use("/api/play-game", playGameRoutes);
-// Compatibility prefix for the client game launcher.
-app.use("/api/game", playGameRoutes);
+// Provider-aware launch endpoint used by the current client. Legacy launch
+// routes remain available below for older clients, but new launches must pass
+// through catalog/provider validation before reaching a provider handler.
+app.use("/api/game", gameLaunchRoutes);
 app.use("/api/callback", callbackRoutes);
 app.use("/api/game-history", gameHistoryRoutes);
 

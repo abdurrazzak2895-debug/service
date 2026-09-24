@@ -94,38 +94,41 @@ const PlayGame = () => {
       setDemoAvailable(false);
       setHasTried(true);
 
-      let resolvedGameUid = uidFromQuery || gameId;
+      // Always resolve the catalog record. The previous implementation only
+      // did this when `uid` was absent, which meant every provider game was
+      // sent to the hard-coded 9Wicket endpoint with no provider context.
+      const gameLookupResponse = await axios.get(
+        `${API_BASE}/api/global/client/play-game/${encodeURIComponent(gameId)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          timeout: 30000,
+        },
+      );
 
-      if (!uidFromQuery) {
-        try {
-          const gameLookupResponse = await axios.get(
-            `${API_BASE}/api/global/client/play-game/${encodeURIComponent(gameId)}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-              timeout: 30000,
-            },
-          );
+      const gameData = gameLookupResponse?.data?.data || {};
+      const resolvedGameUid = gameData?.gameUId || gameData?.game_uid || uidFromQuery || gameId;
+      const providerCode = String(gameData?.provider?.providerCode || "")
+        .trim()
+        .toUpperCase();
+      const providerName = String(gameData?.provider?.providerName || "").trim();
 
-          const gameData = gameLookupResponse?.data?.data || {};
-          resolvedGameUid = gameData?.gameUId || gameData?.game_uid || gameId;
-        } catch {
-          // Catalog may be empty/out of sync (game may only live on the
-          // provider). Fall back to the route param as the provider game UID
-          // instead of failing with "Game not found".
-          resolvedGameUid = gameId;
-        }
+      if (!providerCode) {
+        throw new Error("Game provider metadata is missing");
       }
 
       const payload = {
+        catalogGameId: gameId,
         gameID: resolvedGameUid,
         game_uid: resolvedGameUid,
         gameId: resolvedGameUid,
+        providerCode,
+        providerName,
       };
 
       const res = await axios.post(
-        `${API_BASE}/api/9wicket/launch`,
+        `${API_BASE}/api/game/launch`,
         payload,
         {
           headers: {
@@ -151,10 +154,10 @@ const PlayGame = () => {
       console.error("PlayGame launch error:", error?.response?.data || error);
       launchKeyRef.current = "";
 
-      const providerCode = error?.response?.data?.code;
-      setDemoAvailable(providerCode === "NINEWICKET_REQUIRES_INITIAL_CREDIT");
+      const errorCode = error?.response?.data?.code;
+      setDemoAvailable(errorCode === "NINEWICKET_REQUIRES_INITIAL_CREDIT");
       const message =
-        providerCode === "NINEWICKET_REQUIRES_INITIAL_CREDIT"
+        errorCode === "NINEWICKET_REQUIRES_INITIAL_CREDIT"
           ? t(
               "নতুন ব্যবহারকারীর জন্য প্রথমবার একটি positive amount দিয়ে গেম চালু করুন। এরপর zero balance হলেও পুরোনো 9Wicket wallet reopen করা যাবে।",
               "This is a new 9Wicket account. Launch once with a positive amount; after that, zero-balance reopen is supported.",
