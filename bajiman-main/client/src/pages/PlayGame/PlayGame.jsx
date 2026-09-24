@@ -107,7 +107,7 @@ const PlayGame = () => {
       };
 
       const res = await axios.post(
-        `${API_BASE}/api/game/launch`,
+        `${API_BASE}/api/9wicket/launch`,
         payload,
         {
           headers: {
