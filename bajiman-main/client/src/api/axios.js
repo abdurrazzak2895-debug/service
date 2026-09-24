@@ -1,7 +1,11 @@
 import axios from "axios";
 
+const API_BASE =
+  import.meta.env.VITE_API_URL || "https://bajiman-server.vercel.app";
+
+
 export const api = axios.create({
-  baseURL: "/",
+  baseURL: API_BASE,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
