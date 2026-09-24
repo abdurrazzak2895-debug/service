@@ -14,6 +14,7 @@ const launchUrl = first("SOFTAPI_LAUNCH_URL", "IGAMING_LAUNCH_URL", "NINEWICKET_
 const gameUid = first("SOFTAPI_GAME_UID", "IGAMING_GAME_UID", "NINEWICKET_GAME_UID", "GAME_UID");
 const callback = first("SOFTAPI_CALLBACK_URL", "IGAMING_CALLBACK_URL", "NINEWICKET_CALLBACK_URL") || "https://example.com/api/softapi/callback";
 const returnUrl = first("SOFTAPI_RETURN_URL", "IGAMING_RETURN_URL", "NINEWICKET_RETURN_URL") || "https://example.com/lobby";
+const currencyCode = first("SOFTAPI_CURRENCY_CODE", "IGAMING_CURRENCY_CODE", "NINEWICKET_CURRENCY", "WORLD_CASINO_CURRENCY") || "BDT";
 const userId = first("SOFTAPI_TEST_USER_ID", "IGAMING_TEST_USER_ID") || "1001";
 const balance = Number(process.env.SOFTAPI_TEST_BALANCE || process.env.IGAMING_TEST_BALANCE || "0");
 
@@ -36,6 +37,7 @@ const plain = {
   timestamp,
   return: returnUrl,
   callback,
+  currency_code: currencyCode.toUpperCase(),
 };
 
 const ciphertext = encryptPayload(plain);
@@ -59,6 +61,7 @@ console.log(JSON.stringify({
   timestampAgeMs: Date.now() - roundTrip.timestamp,
   gameUid: roundTrip.game_uid,
   balance: roundTrip.balance,
+  currencyCode: roundTrip.currency_code,
   callbackHttps: /^https:\/\//i.test(roundTrip.callback),
   returnHttps: /^https:\/\//i.test(roundTrip.return),
   launchEndpointConfigured: Boolean(endpoint),

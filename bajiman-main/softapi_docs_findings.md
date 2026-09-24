@@ -46,7 +46,9 @@ The public catalog was rechecked on 2026-09-25. It contains the following confir
 
 The mounted callback paths are `/api/9wicket/callback` and `/api/callback/9wicket`. The current handler decrypts a body `payload` when present, or accepts a plaintext body, then updates the matching `NineWicketSession` balance/status and stores the raw event in `callbackEvents`.
 
-This is **not yet sufficient to claim SoftAPI bet/win webhook support**. It does not validate that an outer callback token matches the decrypted plaintext token, does not enforce an encrypted callback when SoftAPI mode is enabled, and does not settle user wallet balances or create `GameHistory` bet/win records. The existing general callback route contains wallet/history accounting for a different callback schema, but the authenticated SoftAPI documentation reviewed here did not expose enough field-level webhook details to safely map it without guessing.
+The authenticated SoftAPI documentation now confirms that these are **notify-only** webhooks: SoftAPI updates the player balance on its side, and the operator should acknowledge quickly and store the event for its own ledger or CRM. The documented event fields are `game_id`, `game_uid`, `game_round`, `member_account`, `bet_amount`, `win_amount`, `timestamp`, `notify_only`, optional `serial_number`, and optional `game_name`. Encrypted callbacks use `{ payload, timestamp }` and the same AES-256-ECB secret; unencrypted callbacks contain the event fields directly.
+
+The current handler is broadly compatible with the notify-only model because it decrypts the wrapper, stores the raw event, and returns HTTP 200 without attempting to debit or credit the user wallet. It should still be hardened before production SoftAPI use by validating the event shape, rejecting stale encrypted timestamps where appropriate, and deduplicating ledger/CRM processing by `game_round` or `serial_number`. The existing general callback route contains wallet/history accounting for a different provider schema and must not be used for SoftAPI notify-only events.
 
 The VPS smoke test was not run against production credentials: the current checkout has no `.env` file and no `SOFTAPI_*`, `IGAMING_*`, `NINEWICKET_*`, or `WORLD_CASINO_*` variables in its environment. The payload test was therefore run only in no-network mode with synthetic test values.
 
@@ -62,6 +64,8 @@ GET https://igamingapis.com/provider/brands/?brand_id=141
 ```
 
 The launch endpoint is **not** the public catalog URL. It is the portal-specific URL shown as **Provided By IGAMING KEY**. No authenticated portal value was available in the repository or Vercel environment, so no launch endpoint has been invented or written into production configuration. The current deployment continues to use its existing NINEWICKET/World Casino launch configuration.
+
+The supplied agent code grants access to the documentation page, but the `My account` page redirects to the separate email/password login. The documentation page itself exposes only the literal placeholder **Provided By IGAMING KEY**, not the account's actual URL. Therefore the account login or the provider-issued launch URL is still required to finish this mapping.
 
 The remaining deployment inputs are:
 
