@@ -1,0 +1,48 @@
+{
+  "summary": "Live Vercel deployment E2E test. Previously ALL DB routes returned FUNCTION_INVOCATION_FAILED; now serverless-safe Mongo cache + /api ensure-DB middleware is working — DB routes return proper JSON. Login, catalog, callback, and provider-ping-503 graceful path all confirmed working. Client login flow succeeds end-to-end (demo01/demo1234 → balance 2000), and /play-game/11539 fails GRACEFULLY with Bengali error + retry button (env-blocked provider IP whitelist). 3 real live-only bugs found: (a) client API base URL has trailing slash causing double-slash URLs and CORS-blocked preflights for catalog & launch, (b) /api/9wicket/health without key returns 200 leaking config, (c) CORS allow-list not enforced on live — evil origin is echoed back with credentials.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "GET /api/9wicket/health?ping=false (no key)", "issue": "Returns 200 with full config (apiBase, hasToken, secretConfigured, callbackUrl, returnUrl) instead of 401. Health key guard is missing/misconfigured on LIVE. Sensitive config leak.", "priority": "HIGH"},
+      {"endpoint": "CORS layer (all /api routes)", "issue": "Origin 'https://evil.example.com' is echoed back in access-control-allow-origin with access-control-allow-credentials:true. Allow-list not enforced on LIVE — every origin is trusted. ALLOWED_ORIGINS env on Vercel is likely missing / set to '*' / not read.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "GET /api/global/client/play-game/11539", "issue": "provider.providerIcon / providerIconUrl still reference dead igamingapis.com URL. Client-facing image/imageUrl/customImageUrl are correctly emergentagent-hosted (renders fine), but the leftover provider fields could be sanitized."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Catalog fetch + game launch (preflighted XHR)", "issue": "Client calls 'https://bajiman-server.vercel.app//api/global/client/play-game/11539' and '//api/9wicket/launch' (DOUBLE SLASH). Preflight OPTIONS on that URL misses CORS headers → browser blocks with 'has been blocked by CORS policy'. Root cause: VITE_API_BASE (or equivalent) on the deployed client has a trailing '/'. Login (simple POST, no preflight) still slips through. User-visible impact is masked because the launch error UI treats network-error identically to graceful 503, but the console is full of CORS errors and catalog XHR fails.", "affected_selectors": ["/api/global/client/play-game/11539", "/api/9wicket/launch"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_live_vercel.py",
+    "/app/test_reports/pytest/live_vercel.xml"
+  ],
+  "action_items": [
+    "Fix VITE_API_BASE (or REACT_APP_*) on bajiman-client-one Vercel: strip trailing slash so URLs are '.../api/...' not '.../ /api/...'. Alternatively normalize in axios baseURL in client.",
+    "Fix Vercel env ALLOWED_ORIGINS for bajiman-server so CORS actually enforces allow-list (evil origin must NOT be echoed). Verify server/index.js CORS reads process.env.ALLOWED_ORIGINS as comma-separated list and falls back to reject-unknown, not allow-all.",
+    "Fix Vercel env HEALTH_KEY (or health-guard middleware) on bajiman-server: /api/9wicket/health?ping=false without ?key/x-health-key must return 401. Right now it returns 200 with sensitive config.",
+    "Optional: strip / sanitize provider.providerIcon (igamingapis.com) in catalog response."
+  ],
+  "critical_code_review_comments": [
+    "CORS middleware on live behaves as reflect-any-origin — clearly not honoring ALLOWED_ORIGINS. Combined with allow-credentials:true this is a CSRF/credential-theft risk.",
+    "Health endpoint exposes apiBase, callbackUrl, hasToken, secretConfigured without auth. Ping-false path bypasses the key check — the guard should run BEFORE branching on ping.",
+    "Client bakes API base with trailing slash; every axios request produces //api. Add a runtime guard: axios.defaults.baseURL = (env||'').replace(/\\/+$/,'')."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_live_vercel.py (new — 10 live tests, pytest+junit)"
+  ],
+  "success_rate": {"backend": "80% (8/10 live API assertions passed; 2 real bugs)", "frontend": "90% (login, balance, image, graceful launch error, mobile+desktop layout all pass; CORS console errors on preflighted XHRs due to double-slash base URL)"},
+  "test_credentials": "demo01 / demo1234 (balance 2000 BDT); health key: bajiman-health-2026",
+  "seed_data_creation": "none — used existing seeded demo01",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The FUNCTION_INVOCATION_FAILED bug is confirmed FIXED — DB routes now return proper JSON. Three live-only issues remain (see action_items). The provider-IP-whitelist 503 is expected/env-blocked until user configures OUTBOUND_PROXY_URL with a static IP; do NOT classify it as a bug. When re-testing after fixes, run: pytest /app/backend/tests/test_live_vercel.py -v. Note test_catalog_9wicket assertion was intentionally strict on igamingapis substring — it fails on unused providerIcon field; the primary image/imageUrl fields are correct.",
+  "rca_of_the_issue": {
+    "double_slash_cors": "Client env var VITE_API_BASE=https://bajiman-server.vercel.app/ (trailing slash). Axios concatenates '/api/...' → '//api/...'. Vercel routes the doubled path but the response (or preflight 404) omits CORS response headers, so the browser blocks preflighted requests. Fix: trim trailing slash in env OR normalize in axios setup.",
+    "cors_allow_any_origin": "server/index.js likely uses cors({origin:true}) or reads a missing ALLOWED_ORIGINS env → reflect-request-origin behavior. With credentials:true this is unsafe. Fix: implement whitelist function that returns callback(null,false) for unknown origins and set ALLOWED_ORIGINS env in Vercel.",
+    "health_key_bypass": "Guard likely wraps only the ping branch, or reads HEALTH_KEY env that isn't set on Vercel → guard short-circuits to open. Fix: enforce key check at the top of the handler regardless of ping flag; ensure HEALTH_KEY is set in Vercel prod env."
+  }
+}

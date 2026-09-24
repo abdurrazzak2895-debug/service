@@ -1,7 +1,10 @@
 import axios from "axios";
 
-const API_BASE =
-  import.meta.env.VITE_API_URL || "https://bajiman-server.vercel.app";
+// Strip trailing slashes so a VITE_API_URL like "https://host/" never produces
+// double-slash request URLs ("https://host//api/..."), which break CORS preflights.
+const API_BASE = (
+  import.meta.env.VITE_API_URL || "https://bajiman-server.vercel.app"
+).replace(/\/+$/, "");
 
 
 export const api = axios.create({

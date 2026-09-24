@@ -51,18 +51,25 @@ get the server running, and fix why 9Wicket / World Casino game launch is not wo
   client proxy (`BACKEND_API_URL`).
 - Seed/register a user to run a full authenticated launch e2e once IP is whitelisted.
 
-## Session 3 verification (testing_agent iteration_5, all pass)
-- Preview: backend 15/15 code-path tests pass (6 remaining fail ONLY on provider IP
-  whitelist = environment block), frontend 100%. Thumbnail fix verified rendering
-  (naturalWidth=1024). Graceful launch failure verified: single launch POST, Bengali
-  'temporarily unavailable' + Try Again, balance restored to 2000 after failed launch.
-- LIVE VERCEL UPDATE: the fixed code is now deployed — DB routes no longer crash with
-  FUNCTION_INVOCATION_FAILED; they return the new graceful 503 JSON
-  {"success":false,"message":"Database temporarily unavailable"}. This confirms
-  MongoDB Atlas is still rejecting Vercel's egress IPs.
-  REMAINING USER ACTION: Atlas -> Network Access -> allow 0.0.0.0/0 (no redeploy
-  needed after; connection is established per-request). Then login/DB routes go live.
-  9Wicket launches from Vercel still need OUTBOUND_PROXY_URL + provider IP whitelist.
+## Session 3 verification (testing_agent iterations 5-6)
+- Preview (iter 5): backend 15/15 code-path tests pass, frontend 100%, thumbnail fix
+  verified rendering, graceful launch failure verified (single launch POST, balance
+  restored to 2000).
+- LIVE VERCEL (iter 6): core bug FIXED — DB routes return proper JSON, live login
+  works (demo01, balance 2000), catalog/callback/CORS-echo all good, client login +
+  /play-game/11539 graceful-failure e2e passes. User fixed Atlas 0.0.0.0/0 AND the
+  Vercel MONGO_URI (was 'bad auth' — brackets/typo).
+- Live-only issues found by iter 6:
+  1. Double-slash API URLs from live client (VITE_API_URL had trailing '/') breaking
+     CORS preflights -> FIXED IN CODE: axios.js + PlayGame.jsx now strip trailing
+     slashes from the base URL (needs client redeploy via Save to Github).
+  2. HEALTH_CHECK_KEY not set on Vercel -> /api/9wicket/health open without key.
+     USER: add HEALTH_CHECK_KEY=bajiman-health-2026 to server project env + redeploy.
+  3. ALLOWED_ORIGINS not set on Vercel -> CORS reflects any origin with credentials.
+     USER: add ALLOWED_ORIGINS=<5 live origins from DEPLOYMENT_ENV.md> + redeploy.
+  4. Minor: catalog provider.providerIcon still references dead igamingapis.com URL
+     (client-facing image fields are fine).
+- 9Wicket launches from Vercel still need OUTBOUND_PROXY_URL + provider IP whitelist.
 
 ## Session 3 (2026-09): Preview restore + live-site diagnosis + serverless DB fix
 - Pod was reset: recreated `server/.env` (values from DEPLOYMENT_ENV.md, PORT=8001,

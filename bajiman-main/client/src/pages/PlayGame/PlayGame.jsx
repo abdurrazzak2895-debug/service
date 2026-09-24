@@ -9,8 +9,9 @@ import { useLanguage } from "../../Context/LanguageProvider";
 import { selectIsAuth, selectUser } from "../../features/auth/authSelectors";
 import Loading from "../../components/Loading/Loading";
 
-const API_BASE =
-  import.meta.env.VITE_API_URL || "https://bajiman-server.vercel.app";
+const API_BASE = (
+  import.meta.env.VITE_API_URL || "https://bajiman-server.vercel.app"
+).replace(/\/+$/, "");
 
 const PlayGame = () => {
   const navigate = useNavigate();
