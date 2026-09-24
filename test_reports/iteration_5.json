@@ -22,7 +22,7 @@
   "seed_data_creation": "Ran seedTestUser.js to reset demo01 balance to 2000 at start of iteration.",
   "retest_needed": false,
   "should_main_agent_self_test": false,
-  "context_for_next_testing_agent": "Preview base: https://6c847b38-af7d-4785-bd9e-f7fc703fa7f0.preview.emergentagent.com (live-website-14.preview.emergentagent.com also routes to same pod and is what the pytest suites hit). Expected pytest state on this pod: 15 pass / 6 fail with the 6 failures all citing 'IP 34.16.56.64 not whitelisted' — treat as environment-blocked, not code failures. Working UI login recipe still: click header 'লগইন' -> fill first two visible modal inputs with demo01/demo1234 -> among all 'লগইন' buttons click the one with bounding_box.y > 200. Note: balance renders as '২,০০০' / '2,000 BDT' (with comma) in DOM, so use substring '2,000' not '2000' when asserting via text_content.",
+  "context_for_next_testing_agent": "Preview base: https://full-page-preview-3.preview.emergentagent.com (live-website-14.preview.emergentagent.com also routes to same pod and is what the pytest suites hit). Expected pytest state on this pod: 15 pass / 6 fail with the 6 failures all citing 'IP 34.16.56.64 not whitelisted' — treat as environment-blocked, not code failures. Working UI login recipe still: click header 'লগইন' -> fill first two visible modal inputs with demo01/demo1234 -> among all 'লগইন' buttons click the one with bounding_box.y > 200. Note: balance renders as '২,০০০' / '2,000 BDT' (with comma) in DOM, so use substring '2,000' not '2000' when asserting via text_content.",
   "verification_evidence": {
     "backend_root_via_ingress": "routes to frontend HTML (expected — /api only hits Express)",
     "9wicket_health_no_key_status": 401,

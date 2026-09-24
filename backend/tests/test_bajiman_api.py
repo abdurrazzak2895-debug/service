@@ -3,7 +3,7 @@ import os
 import pytest
 import requests
 
-BASE_URL = "https://live-website-14.preview.emergentagent.com"
+BASE_URL = "https://full-page-preview-3.preview.emergentagent.com"
 HEALTH_KEY = "bajiman-health-2026"
 USER_ID = "demo01"
 PASSWORD = "demo1234"
@@ -141,7 +141,7 @@ class TestCORS:
         # (cluster-5.preview.emergentcf.cloud) before it reaches Express.
         # Real browser POSTs from the preview origin also arrive with the
         # cluster origin, so we validate the cluster domain is reflected.
-        origin = "https://live-website-14.preview.emergentagent.com"
+        origin = "https://full-page-preview-3.preview.emergentagent.com"
         r = requests.post(
             f"{BASE_URL}/api/users/login",
             headers={"Origin": origin, "Content-Type": "application/json"},

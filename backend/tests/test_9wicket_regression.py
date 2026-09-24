@@ -2,7 +2,7 @@
 import os
 import requests
 
-BASE_URL = "https://live-website-14.preview.emergentagent.com"
+BASE_URL = "https://full-page-preview-3.preview.emergentagent.com"
 HEALTH_KEY = "bajiman-health-2026"
 
 
