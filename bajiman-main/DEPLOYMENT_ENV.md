@@ -25,6 +25,8 @@ Root directory: `server`
 | `WORLD_CASINO_CALLBACK_URL` | `https://bajiman-server.vercel.app/api/callback/9wicket` | HTTPS, publicly reachable. |
 | `WORLD_CASINO_9WICKET_GAME_UID` | `11539` | |
 | `WORLD_CASINO_9WICKET_SOURCE_GAME_UIDS` | `48341a3bf62b6dd0814d7129e7e0834b` | Legacy IDs that resolve to 9Wicket. |
+| `HEALTH_CHECK_KEY` | *(any strong random string)* | Required to call `/api/9wicket/health` in prod. Send as `x-health-key` header or `?key=`. Leave unset to keep the endpoint open (dev only). |
+| `OUTBOUND_PROXY_URL` | *(empty, or `http://user:pass@STATIC_IP:PORT`)* | Routes provider calls through a fixed-IP proxy so the provider sees a stable whitelisted IP. See "static egress" below. |
 
 > The server also accepts `NINEWICKET_*` names directly; the `WORLD_CASINO_*`
 > names above are auto-mapped, so you only need one set.
@@ -92,14 +94,25 @@ Root directory: `admin`
 
 ---
 
-## ⚠️ The real 9Wicket blocker (not an env issue)
+## ⚠️ Static egress (keep 9Wicket working when the provider tightens whitelisting)
 
-The provider whitelists by **source IP**. A live call returns
-`IP <x> not whitelisted`. Vercel serverless egress IPs are **dynamic**, so
-launches will keep failing there even with perfect env vars. To fix:
+The provider whitelists by **source IP**. Vercel serverless egress IPs are
+**dynamic**, so a launch can start failing with `IP <x> not whitelisted` at any
+time. The server now supports routing all provider calls through a fixed-IP
+proxy:
 
-1. Route the server's outbound traffic through a **static IP** (fixed-IP proxy,
-   or host the server on a VPS/container with a stable IP), then
-2. Give that IP to the World Casino admin to whitelist.
+1. Stand up (or rent) an HTTP proxy that has a **static outbound IP**
+   (e.g. a small VPS running Squid/tinyproxy, or a managed static-egress /
+   fixed-IP proxy service).
+2. Give that static IP to the World Casino admin to **whitelist**.
+3. Set `OUTBOUND_PROXY_URL` on the **server** project, e.g.
+   `http://user:pass@STATIC_IP:8080` (or `https://…`). Leave it empty to send
+   traffic directly (works only where the host IP itself is whitelisted).
 
-Verify anytime with: `GET https://bajiman-server.vercel.app/api/9wicket/health`
+Alternatively, host the Express server on a VPS/container with its own stable
+IP instead of Vercel serverless, and whitelist that IP directly.
+
+Verify anytime with:
+`GET https://bajiman-server.vercel.app/api/9wicket/health` (with the
+`x-health-key` header). Check `config.outboundProxyConfigured` and
+`providerCheck.ipWhitelisted`.

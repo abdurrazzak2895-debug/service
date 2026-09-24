@@ -207,10 +207,23 @@ export const launchNineWicket = async (req, res) => {
   }
 };
 
+// Lightweight guard so diagnostics aren't public in production. When
+// HEALTH_CHECK_KEY is set, callers must send it via `x-health-key` header or
+// `?key=`. When unset (local dev), the endpoint stays open.
+const healthGuard = (req, res, next) => {
+  const configured = String(process.env.HEALTH_CHECK_KEY || "").trim();
+  if (!configured) return next();
+  const provided = String(
+    req.headers["x-health-key"] || req.query.key || "",
+  ).trim();
+  if (provided && provided === configured) return next();
+  return res.status(401).json({ success: false, message: "Unauthorized health check" });
+};
+
 // Diagnostics: config + live provider reachability at a glance.
 // GET /api/9wicket/health           -> also pings the provider
 // GET /api/9wicket/health?ping=false -> config only, no network call
-router.get("/health", async (req, res) => {
+router.get("/health", healthGuard, async (req, res) => {
   const summary = configSummary();
   const cb = callbackUrl();
   const rt = returnUrl();
@@ -219,6 +232,7 @@ router.get("/health", async (req, res) => {
     apiBase: summary.apiBase,
     hasToken: summary.hasToken,
     secretConfigured: summary.secretConfigured,
+    outboundProxyConfigured: summary.outboundProxyConfigured,
     gameUid: configuredGameUid(),
     symbol: symbol(),
     currency: currency(),
