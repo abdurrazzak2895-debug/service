@@ -87,18 +87,25 @@ const PlayGame = () => {
       let resolvedGameUid = uidFromQuery || gameId;
 
       if (!uidFromQuery) {
-        const gameLookupResponse = await axios.get(
-          `${API_BASE}/api/global/client/play-game/${encodeURIComponent(gameId)}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
+        try {
+          const gameLookupResponse = await axios.get(
+            `${API_BASE}/api/global/client/play-game/${encodeURIComponent(gameId)}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              timeout: 30000,
             },
-            timeout: 30000,
-          },
-        );
+          );
 
-        const gameData = gameLookupResponse?.data?.data || {};
-        resolvedGameUid = gameData?.gameUId || gameData?.game_uid || gameId;
+          const gameData = gameLookupResponse?.data?.data || {};
+          resolvedGameUid = gameData?.gameUId || gameData?.game_uid || gameId;
+        } catch {
+          // Catalog may be empty/out of sync (game may only live on the
+          // provider). Fall back to the route param as the provider game UID
+          // instead of failing with "Game not found".
+          resolvedGameUid = gameId;
+        }
       }
 
       const payload = {

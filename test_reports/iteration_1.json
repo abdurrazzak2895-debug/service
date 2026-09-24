@@ -1,0 +1,49 @@
+{
+  "summary": "Ran 9-endpoint pytest suite against Bajiman public URL and end-to-end Playwright UI tests. All 9 backend tests pass (health guard, health with key query+header, health ping=false, provider ping ok+IP whitelisted, login success, login bad creds, 9Wicket launch+cashout roundtrip, 9Wicket callback returns text 'OK'). Frontend loads within ~10s (site loader gates on redux `loaded`+`gameLoaded`, both fire once /api/global/client/site-data + game-data return). Login via UI works: modal opens from লগইন button, POST /api/users/login → 200, token saved to localStorage.user_token, navbar switches to show balance 2,000 BDT and avatar. However, navigating to /play-game/11539 renders 'Game not found' screen because PlayGame.jsx does a pre-launch lookup GET /api/global/client/play-game/11539 which 404s on the near-empty catalog and short-circuits the flow before /api/9wicket/launch is ever called. Navigating to /play-game/11539?uid=11539 skips the lookup and the game iframe renders with a real provider URL (https://igamingapis.live/9w/play?t=...). Provider IP is currently whitelisted.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "Game launch from /play-game/:gameId (no ?uid= query)",
+        "issue": "PlayGame.jsx (lines 89-102) calls GET /api/global/client/play-game/:gameId first. Catalog DB is empty so it returns 404 'Game not found'; the error is thrown, caught by the outer try/catch, and shown as the failure state. /api/9wicket/launch is never called. Root cause: no fallback to using the URL param as game_uid when the lookup returns 404. Works fine when /play-game/11539?uid=11539 is used (verified iframe src = https://igamingapis.live/9w/play?t=... after 400/200 launch sequence).",
+        "affected_selectors": ["/play-game/:gameId route", "PlayGame.jsx launchGame()"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Login modal",
+        "issues": ["Submit button remains grey/disabled-looking until both fields are filled (actual disabled state, not just style) — expected UX but worth confirming the greyed-out variant has enough contrast against the modal bg."]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_bajiman_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Fix client/src/pages/PlayGame/PlayGame.jsx: when GET /api/global/client/play-game/:gameId returns 404 (or any non-2xx), fall back to `resolvedGameUid = gameId` and continue to POST /api/9wicket/launch instead of surfacing 'Game not found'. Alternatively, when the numeric gameId matches a known provider game_uid (e.g. env WORLD_CASINO_9WICKET_GAME_UID), skip the catalog lookup entirely.",
+    "Optionally seed the games collection in MongoDB with at least the 11539 record so the lookup succeeds and game cards on the lobby become clickable.",
+    "Add a Cashout / Exit-game button in the /play-game screen so users can return funds to the local wallet before closing; currently after a successful launch the local wallet reads 0 until backend /api/9wicket/cashout is called (verified via API — cashout works)."
+  ],
+  "critical_code_review_comments": [
+    "PlayGame.jsx catalog lookup is required even though provider game UID is known — brittle when Mongo catalog is out of sync. Should short-circuit for numeric/known provider UIDs.",
+    "Client stores JWT in localStorage.user_token, but PlayGame also checks 'token' and 'accessToken' fallbacks — pick one canonical key to avoid drift.",
+    "server/routes/nineWicketRoutes.js: /health returns providerCheck with attempted:false when ping=false. Consider omitting the providerCheck object entirely or adding an explicit `skipped:true` flag for cleaner API contract.",
+    "CORS fix (origin:true, credentials:true) reflects any origin — acceptable for this preview but for production consider an allow-list backed by env var."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_bajiman_api.py (new)",
+    "/app/test_reports/pytest/pytest_results.xml (new)"
+  ],
+  "success_rate": {"backend": "100% (9/9)", "frontend": "~66% (lobby load + login work; /play-game/:gameId fails without ?uid=; game launch works with ?uid=)"},
+  "test_credentials": "demo01 / demo1234 (from /app/memory/test_credentials.md); health key: bajiman-health-2026",
+  "seed_data_creation": "None. demo01 already existed; balance reset to 2000 by seed script per README.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend is solid — do not re-test unless server code changes. Focus next iteration on verifying the /play-game/:gameId fix (should launch without needing ?uid=). Note: after each successful launch, demo01's local balance drops to ~1990 and the credited amount stays in the 9Wicket provider wallet until POST /api/9wicket/cashout is called. Re-seed with `cd bajiman-main/server && node scripts/seedTestUser.js` if balance is exhausted. Provider IP is currently whitelisted; if provider tests start failing with ipWhitelisted:false, the provider has to be contacted to re-whitelist this server's egress IP or OUTBOUND_PROXY_URL must be configured.",
+  "rca_of_the_issue": "PlayGame.jsx lines 89-102 unconditionally perform `GET /api/global/client/play-game/:gameId` when `?uid=` is absent. In this environment the games collection in MongoDB is empty (only demo01 user + settings were seeded programmatically), so this endpoint returns HTTP 404 with body {success:false, message:'Game not found'}. axios throws, control transfers to the catch block, `error?.response?.data?.message` ('Game not found') is displayed, and the actual `/api/9wicket/launch` POST never fires. Direct curl to /api/9wicket/launch with {game_uid:'11539',amount:10} + Bearer token succeeds (200, sessionId+gameUrl issued), confirming the backend is healthy. Mitigation: wrap the lookup in try/catch and fall back to using route param as game_uid, OR seed the game record."
+}
