@@ -60,7 +60,7 @@ export const postTransfer = async (plain) => {
   const payload = { ...plain, token: token(), timestamp: Number(plain.timestamp || Date.now()) };
   const response = await axios.post(apiUrl(), { token: token(), payload: encryptPayload(payload) }, {
     headers: { "Content-Type": "application/json" },
-    timeout: 60000,
+    timeout: 20000,
     proxy: proxyConfig(),
   });
   const data = response.data || {};
@@ -76,7 +76,7 @@ export const getTransactions = async (path, params) => {
   requireConfig();
   const response = await axios.get(`${apiUrl()}${path}`, {
     params: { ...params, token: token() },
-    timeout: 60000,
+    timeout: 20000,
     proxy: proxyConfig(),
   });
   const data = response.data || {};

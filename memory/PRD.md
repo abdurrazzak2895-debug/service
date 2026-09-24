@@ -51,6 +51,40 @@ get the server running, and fix why 9Wicket / World Casino game launch is not wo
   client proxy (`BACKEND_API_URL`).
 - Seed/register a user to run a full authenticated launch e2e once IP is whitelisted.
 
+## Session 3 (2026-09): Preview restore + live-site diagnosis + serverless DB fix
+- Pod was reset: recreated `server/.env` (values from DEPLOYMENT_ENV.md, PORT=8001,
+  HEALTH_CHECK_KEY=bajiman-health-2026 matching the regression suite), repointed
+  `client/.env` VITE_API_URL at the preview URL, reinstalled node_modules, and
+  replaced the default supervisor conf (was pointing at non-existent /app/backend
+  FastAPI + /app/frontend CRA) with Express-on-8001 + Vite-on-3000. Persistent copy
+  at `/app/scripts/supervisord.conf` — after any pod restart:
+  `sudo cp /app/scripts/supervisord.conf /etc/supervisor/conf.d/supervisord.conf && sudo supervisorctl reread && sudo supervisorctl update`
+- Regression: 15/21 pass locally; the same 6 fail ONLY because this pod's egress IP
+  (34.16.56.64) is not whitelisted at the provider (provider-side, documented).
+- Fixed broken lobby thumbnail: provider feed's image URL for game 11539 404s
+  (`igamingapis.com/img/11539.png/images/index.png`); replaced DB record image with
+  a generated hosted thumbnail. (A future oracle re-sync may reintroduce it.)
+- LIVE SITE (bajiman-server.vercel.app) diagnosis: `/` and health?ping=false = 200,
+  but ALL Mongo-dependent routes (login, catalog) + health-with-ping returned
+  FUNCTION_INVOCATION_FAILED. Root cause chain: Atlas Network Access does not allow
+  Vercel egress IPs -> mongoose.connect rejects after serverSelection timeout ->
+  old db.js called `process.exit(1)` -> serverless instance killed mid-request.
+- FIX (serverless-safe DB, committed to repo):
+  - `server/config/db.js`: connection cached on globalThis across invocations,
+    8s serverSelectionTimeout, NO process.exit (rethrows instead).
+  - `server/index.js`: `app.use("/api", ...)` middleware awaits the cached
+    connection per request; on failure returns 503 JSON instead of crashing.
+    Eager connect only when VERCEL!=1.
+  - `nineWicketService.js`: axios timeout 60s -> 20s (above Vercel maxDuration
+    caused hard crashes on a slow provider).
+- USER ACTION REQUIRED to make the live site work:
+  1. MongoDB Atlas -> Network Access -> Add 0.0.0.0/0 (Vercel egress is dynamic).
+  2. Deploy the fixed server code to Vercel (Save to Github -> Vercel auto-deploy).
+  3. Afterwards verify: GET /api/9wicket/health?key=bajiman-health-2026 and a login
+     POST should return JSON instead of FUNCTION_INVOCATION_FAILED.
+  4. Still pending (provider-side): whitelist a STATIC egress IP / set
+     OUTBOUND_PROXY_URL for 9Wicket launches from Vercel.
+
 ## Session 2 (2026-06): 4 follow-ups + bug fixes (all verified by testing_agent)
 Delivered & tested (iterations 1-3, all pass):
 1. Health endpoint auth guard — GET /api/9wicket/health now guarded by HEALTH_CHECK_KEY

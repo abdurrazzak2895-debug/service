@@ -91,7 +91,9 @@ const app = express();
 // req.protocol/req.secure resolve to "https" correctly instead of "http"
 app.set("trust proxy", 1);
 
-connectDB();
+// Eager connect for long-running servers (local/VPS). On Vercel the per-request
+// middleware below establishes (and caches) the connection instead.
+if (process.env.VERCEL !== "1") connectDB().catch(() => {});
 
 // Credentialed cross-origin support: the client sends withCredentials, so a
 // wildcard "*" origin is not allowed. When ALLOWED_ORIGINS is set (comma-
@@ -134,6 +136,17 @@ app.get("/", (req, res) => {
 });
 
 /* Existing Routes */
+// Every /api route needs MongoDB. Await the (cached) connection so a cold
+// serverless start never buffers-then-crashes; respond 503 JSON if Atlas is
+// unreachable (e.g. Network Access not open to the host egress IPs).
+app.use("/api", async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch {
+    res.status(503).json({ success: false, message: "Database temporarily unavailable" });
+  }
+});
 app.use("/api/admin", adminRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/affiliate", affiliateRoutes);
