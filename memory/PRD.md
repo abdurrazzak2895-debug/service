@@ -160,3 +160,10 @@ Test-env runtime notes (this preview only):
 - Verified (Playwright + curl + testing_agent iter 8): home lobby renders, login (demo01), register modal, games page, and logout dropdown ALL work. Backend /api/users/login, /api/global/client/site-data, /api/global/client/game-data all 200.
 - Design note: the client is a CUSTOM Marbaji-style casino lobby (dark navy + gold, hero slider, VIP tier, provider chips, popular/all-game grids), not a pixel copy of the live marbaji88.com (which does not render in available tooling). Exact page-by-page matching needs reference screenshots from the user.
 - Backlog / next: RegisterModal calls restcountries.com from the browser (CORS-blocked) -> proxy via backend; add data-testid attributes for auth/nav/games; seed admin-configured deposit/withdraw methods so those private pages have content; provider game launch needs external IP whitelist (disabled locally).
+
+## Session 5 (2026-06): Deposit/Withdraw seeding + country picker CORS fix
+- Deposit & Withdraw methods: added `server/scripts/seedPaymentMethods.js` seeding 3 deposit methods (bkash/nagad/rocket) with contacts + DepositBonusTurnover channels & promotions, and 3 withdraw methods (BKASH/NAGAD/ROCKET). Deposit modal now shows methods/channels/promotions and reaches the confirm step; Withdraw modal shows methods + auto registration wallet.
+- Country picker fix: RegisterModal previously fetched restcountries.com from the browser (CORS-blocked -> empty dropdown). Added `server/routes/countryRoutes.js` (GET /api/countries) that fetches server-side with a curated 30+ country fallback; RegisterModal now calls `api.get('/api/countries')`. Defaults to Bangladesh +880.
+- Verified by testing_agent iter 9: 100% frontend, all 3 features PASS, no regressions.
+- Re-seed anytime: `cd /app/bajiman-main/server && node scripts/seedPaymentMethods.js`
+- Still user/infra-dependent: page-by-page 1:1 match of live marbaji88.com (needs reference screenshots), and real provider game launches (needs static egress IP whitelisted with provider).

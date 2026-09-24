@@ -1,0 +1,38 @@
+{
+  "summary": "Frontend-only verification of (1) Register-modal country picker CORS fix, (2) new Deposit payment methods flow, (3) new Withdraw payment methods flow on Marbaji clone. All three review-request features PASS end-to-end via UI. No regressions observed.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "RegisterModal", "issues": ["Country selector shows only the currency code 'BDT' as the primary label instead of country name + dial code (design nit; flag + dropdown work correctly and list 33+ countries)"]}
+    ]
+  },
+  "test_results": {
+    "test_1_register_country_picker": {
+      "status": "PASS",
+      "details": "Register modal opens, currency selector defaults to BDT with Bangladesh flag, phone field defaults to +880 with BD flag. Opening dropdown lists 33 unique dial codes (multiple flags rendered). No CORS/console errors observed."
+    },
+    "test_2_deposit_methods": {
+      "status": "PASS",
+      "details": "After login as demo01/demo1234, Deposit modal renders 3 payment methods: রকেট (RO/Rocket), নগদ (NA/Nagad), বিকাশ (BK/bKash). Selecting বিকাশ reveals 2 channels (ইনস্ট্যান্ট +0%, বোনাস চ্যানেল +3%) and promotion dropdown lists 'কোনো বোনাস নয় x1', 'ওয়েলকাম +১০০৳ +100 x3', 'রিলোড +৫% +5% x5'. Entering amount 500 enables সাবমিট which advances to 'ডিপোজিট নিশ্চিত করুন' step showing BKA / বিকাশ / amount 500 / agent wallet 01700000011 / sender number + transaction ID inputs. Turnover x1 / ৳500 shown."
+    },
+    "test_3_withdraw_methods": {
+      "status": "PASS",
+      "details": "Avatar dropdown → উইথড্রয়াল opens withdraw modal showing balance ৳2,000, 3 methods (রকেট, নগদ, বিকাশ), auto-populated wallet '01700000001 (রেজিস্ট্রেশন নাম্বার)' in wallet selector with 'ওয়ালেট যোগ করুন' option, amount preset chips (1000/2000/5000/10000/15000/20000), turnover warning, and উইথড্র সাবমিট button. As instructed, did not submit."
+    }
+  },
+  "critical_code_review_comments": [
+    "Modal Escape-key close is not wired up (Escape key does not dismiss login/register/deposit/withdraw modals). Users can only close via the X icon; minor UX issue.",
+    "No data-testid attributes anywhere in the app; had to drive tests by Bengali visible text which is brittle. Recommend adding data-testid to Sign-up, Login submit, avatar dropdown, deposit/withdraw menu items, method tiles, channel tiles, promotion items, amount input, submit buttons.",
+    "In RegisterModal, the currency select shows only 'BDT' rather than country name — flag+code lookup works but consider showing 'Bangladesh (+880)' or 'BDT — Bangladesh' for clarity."
+  ],
+  "updated_files": [],
+  "test_report_links": [],
+  "success_rate": { "backend": "n/a (skipped per request)", "frontend": "100%" },
+  "test_credentials": "demo01 / demo1234 (client login, ৳2,000 seeded balance) — verified working",
+  "seed_data_creation": "None — used seeded payment methods and demo01 user.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All 3 features from iteration 9 review request PASS. Deposit modal has Auto ডিপোজিট tab (not tested). Withdraw submit not exercised because SMS/OTP provider not configured (per instruction). Escape key does not close modals — use the X (svg) button top-right of modal or click-outside. Avatar button is at approx x=1221 y<60 (immediately left of language flag). Deposit trigger button 'ডিপোজিট' in header top-right at y<80 opens the deposit modal directly. Menu items in avatar dropdown are BUTTON elements with Bengali labels including ডিপোজিট, উইথড্রয়াল, রেফার বোনাস, ট্রানজেকশন রেকর্ডস, পার্সোনাল ইনফো, পাসওয়ার্ড পরিবর্তন, লগআউট."
+}
