@@ -1,0 +1,52 @@
+{
+  "summary": "Iteration 5 verifies the four changes from this session in the preview: (1) serverless-safe cached db.js (no process.exit) is present in code; live login through /api ensure-DB middleware works (2) 9Wicket lobby thumbnail 404 fix — GET /api/global/client/play-game/11539 returns the new emergentagent-hosted image and the lobby actually renders it (naturalWidth=1024, complete=true); (3) axios timeout 60s->20s in nineWicketService (code inspected, still 20000); (4) CORS allow-list + no-Origin callback still healthy. Regression suites run: 15 pass / 6 fail, and ALL 6 failures explicitly contain 'IP 34.16.56.64 not whitelisted' — environment/provider block only, no code regression. Full UI login + /play-game/11539 launch flow works: exactly ONE POST /api/9wicket/launch, graceful error state (Bengali 'temporarily unavailable / আবার চেষ্টা'), balance restored to 2,000 BDT (visible in header and VIP bar).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_9wicket_regression.py",
+    "/app/backend/tests/test_bajiman_api.py",
+    "/app/test_reports/pytest/iteration_5.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "db.js serverless fix looks correct: connection cached on globalThis, no process.exit; index.js app.use('/api') awaits the cached connect and returns 503 JSON on failure — verified indirectly because /api/users/login on this pod (which relies on the same ensure-DB middleware path) returns 200 with a token. Full Vercel verification still gated on Atlas 0.0.0.0/0 allow + redeploy (out of scope for preview).",
+    "nineWicketService axios timeout is 20000 at both lines 63 and 79 as specified; provider 'IP not whitelisted' comes back well under that (~1-2s) so timeout change is non-observable but not regressed.",
+    "9Wicket thumbnail fix confirmed: DB record image = https://static.prod-images.emergentagent.com/jobs/1de8c2e6-bbc9-4584-b016-849068fec46b/images/38991a80811a2a1a725e05186c4b0a3712272bebdea455d9db4e895d92b96730.jpeg and the <img> loads (imgComplete=true, naturalWidth=1024) — no broken image / alt-text fallback anymore.",
+    "CORS: legit preview origin -> access-control-allow-origin echoes the request origin (Cloudflare rewrites to .cluster-5.preview.emergentcf.cloud, still in allow-list). https://evil.example.com -> 500 (Express CORS middleware throws) — rejected. No-Origin POST /api/callback/9wicket returns 200 'OK'.",
+    "Graceful launch failure path is solid: PlayGame calls launch exactly once, shows Bengali 'temporarily unavailable' + 'আবার চেষ্টা করুন' style message, does NOT crash, and the demo01 balance is fully restored to 2,000 BDT after the failed launch (no double reservation).",
+    "Note: 'Backend root GET /' test item is not testable through the Kubernetes ingress because non-/api paths route to the Vite frontend on :3000. All /api routes work; the change is not a regression."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% for code (15/15 code-path tests pass; 6/6 remaining fail ONLY on provider IP whitelist — environment block)", "frontend": "100%"},
+  "test_credentials": "demo01 / demo1234 (balance re-seeded to 2000 via /app/bajiman-main/server/scripts/seedTestUser.js). Health key: bajiman-health-2026.",
+  "seed_data_creation": "Ran seedTestUser.js to reset demo01 balance to 2000 at start of iteration.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Preview base: https://6c847b38-af7d-4785-bd9e-f7fc703fa7f0.preview.emergentagent.com (live-website-14.preview.emergentagent.com also routes to same pod and is what the pytest suites hit). Expected pytest state on this pod: 15 pass / 6 fail with the 6 failures all citing 'IP 34.16.56.64 not whitelisted' — treat as environment-blocked, not code failures. Working UI login recipe still: click header 'লগইন' -> fill first two visible modal inputs with demo01/demo1234 -> among all 'লগইন' buttons click the one with bounding_box.y > 200. Note: balance renders as '২,০০০' / '2,000 BDT' (with comma) in DOM, so use substring '2,000' not '2000' when asserting via text_content.",
+  "verification_evidence": {
+    "backend_root_via_ingress": "routes to frontend HTML (expected — /api only hits Express)",
+    "9wicket_health_no_key_status": 401,
+    "9wicket_health_key_ping_false_status": 200,
+    "9wicket_health_key_ping_false_success": true,
+    "login_ok_status": 200,
+    "login_bad_password_status": 401,
+    "play_game_11539_name": "9Wicket",
+    "play_game_11539_image": "https://static.prod-images.emergentagent.com/jobs/1de8c2e6-bbc9-4584-b016-849068fec46b/images/38991a80811a2a1a725e05186c4b0a3712272bebdea455d9db4e895d92b96730.jpeg",
+    "callback_no_origin_status": 200,
+    "callback_no_origin_body": "OK",
+    "cors_legit_origin_ACAO": "https://6c847b38-af7d-4785-bd9e-f7fc703fa7f0.cluster-5.preview.emergentcf.cloud",
+    "cors_evil_origin_status": 500,
+    "pytest_summary": "6 failed, 15 passed in 18.70s",
+    "pytest_all_failures_cause": "IP 34.16.56.64 not whitelisted (environment block, verified in every failure message)",
+    "desktop_1920x800_horizontal_overflow_px": 0,
+    "mobile_390x844_horizontal_overflow_px": 0,
+    "lobby_9Wicket_card_visible": true,
+    "lobby_9Wicket_image_loaded": true,
+    "lobby_9Wicket_image_naturalWidth": 1024,
+    "ui_login_success_balance_rendered": "2,000 BDT (visible in header and VIP bar)",
+    "playgame_launch_call_count": 1,
+    "playgame_graceful_error_terms_seen": ["unavailable", "temporarily", "চেষ্টা", "আবার", "9wicket"],
+    "balance_restored_after_failed_launch": true,
+    "unexpected_console_errors": 0
+  }
+}

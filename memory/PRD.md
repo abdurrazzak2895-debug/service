@@ -51,6 +51,19 @@ get the server running, and fix why 9Wicket / World Casino game launch is not wo
   client proxy (`BACKEND_API_URL`).
 - Seed/register a user to run a full authenticated launch e2e once IP is whitelisted.
 
+## Session 3 verification (testing_agent iteration_5, all pass)
+- Preview: backend 15/15 code-path tests pass (6 remaining fail ONLY on provider IP
+  whitelist = environment block), frontend 100%. Thumbnail fix verified rendering
+  (naturalWidth=1024). Graceful launch failure verified: single launch POST, Bengali
+  'temporarily unavailable' + Try Again, balance restored to 2000 after failed launch.
+- LIVE VERCEL UPDATE: the fixed code is now deployed — DB routes no longer crash with
+  FUNCTION_INVOCATION_FAILED; they return the new graceful 503 JSON
+  {"success":false,"message":"Database temporarily unavailable"}. This confirms
+  MongoDB Atlas is still rejecting Vercel's egress IPs.
+  REMAINING USER ACTION: Atlas -> Network Access -> allow 0.0.0.0/0 (no redeploy
+  needed after; connection is established per-request). Then login/DB routes go live.
+  9Wicket launches from Vercel still need OUTBOUND_PROXY_URL + provider IP whitelist.
+
 ## Session 3 (2026-09): Preview restore + live-site diagnosis + serverless DB fix
 - Pod was reset: recreated `server/.env` (values from DEPLOYMENT_ENV.md, PORT=8001,
   HEALTH_CHECK_KEY=bajiman-health-2026 matching the regression suite), repointed
