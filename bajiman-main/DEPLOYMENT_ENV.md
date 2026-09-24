@@ -1,64 +1,55 @@
 # Vercel Environment Variables — Bajiman
 
-Set these in each Vercel project → **Settings → Environment Variables**
-(scope: **Production** + **Preview**). Values below mirror the working local
-`server/.env`. Do **not** commit real secrets to git.
-
----
+Set these in each Vercel project → **Settings → Environment Variables** and scope them to **Production** and **Preview** as appropriate. **Never commit real secrets to git.** The credentials that were previously present in this file must be rotated because they were exposed in repository history.
 
 ## 1) SERVER project (`bajiman-server`)
 
-Root directory: `server`
+Root directory: `server`.
 
 | Key | Value | Notes |
 |-----|-------|-------|
-| `VERCEL` | `1` | Skips `app.listen` (serverless). Vercel usually sets this automatically; set it explicitly to be safe. |
-| `MONGO_URI` | `mongodb+srv://abdurrazzak7395_db_user:gfNcmCTQp7qfCwJj@cluster0.e1nyt5v.mongodb.net/bajiman?appName=Cluster0` | Password has **no** `< >` brackets. `/bajiman` = DB name. |
-| `JWT_SECRET` | `n8GT-B8EisRCaTVlF2iCdcqA9x3nIR-Vrnkt8zf5hyBh1wsblBs7bsG-VEDAT5CE` | |
+| `VERCEL` | `1` | Skips `app.listen` in serverless mode. |
+| `MONGO_URI` | `mongodb+srv://DB_USER:DB_PASSWORD@DB_CLUSTER/bajiman` | Use a newly rotated Atlas user/password. Allow the selected server egress in Atlas Network Access. |
+| `JWT_SECRET` | `<new-long-random-secret>` | Rotate the previously exposed value. |
 | `JWT_EXPIRE` | `30d` | |
-| `OTP_API_KEY` | `demo-otp-key` | |
+| `OTP_API_KEY` | `<provider-key>` | Do not use the old committed value. |
 | `WORLD_CASINO_ENABLED` | `true` | |
 | `WORLD_CASINO_API_URL` | `https://world-casino-api.com/api/v1` | Aliased to `NINEWICKET_API_BASE`. |
-| `WORLD_CASINO_TOKEN` | `b72a0beafb2bcbf595056a6d2ff324c9` | |
-| `WORLD_CASINO_SECRET` | `44ea1f9b7f1e6f235c06685cb9720b4a` | Must be exactly **32 bytes**. |
-| `WORLD_CASINO_RETURN_URL` | `https://bajiman-client-one.vercel.app/` | HTTPS, **no** query string. |
-| `WORLD_CASINO_CALLBACK_URL` | `https://bajiman-server.vercel.app/api/callback/9wicket` | HTTPS, publicly reachable. |
-| `WORLD_CASINO_9WICKET_GAME_UID` | `11539` | |
-| `WORLD_CASINO_9WICKET_SOURCE_GAME_UIDS` | `48341a3bf62b6dd0814d7129e7e0834b` | Legacy IDs that resolve to 9Wicket. |
-| `HEALTH_CHECK_KEY` | *(any strong random string)* | Required to call `/api/9wicket/health` in prod. Send as `x-health-key` header or `?key=`. Leave unset to keep the endpoint open (dev only). |
-| `OUTBOUND_PROXY_URL` | *(empty, or `http://user:pass@STATIC_IP:PORT`)* | Routes provider calls through a fixed-IP proxy so the provider sees a stable whitelisted IP. See "static egress" below. |
-| `ALLOWED_ORIGINS` | `https://bajiman-client-one.vercel.app,https://bajiman-admin-seven.vercel.app,https://bajiman-affiliate-brown.vercel.app,https://bajiman-brand-five.vercel.app,https://bajiman-guide-sigma.vercel.app` | Comma-separated list of client origins allowed to make credentialed requests. Leave **empty** only in local dev (reflects any origin). Requests without an Origin header (provider callbacks, server-to-server) always pass. |
+| `WORLD_CASINO_TOKEN` | `<provider-token>` | Rotate/reissue if the old value was active. |
+| `WORLD_CASINO_SECRET` | `<exactly-32-byte-secret>` | Keep server-side only. |
+| `WORLD_CASINO_RETURN_URL` | `https://bajiman-client-one.vercel.app/` | HTTPS, no query string. |
+| `WORLD_CASINO_CALLBACK_URL` | `https://bajiman-server.vercel.app/api/callback/9wicket` | HTTPS and publicly reachable. |
+| `WORLD_CASINO_9WICKET_GAME_UID` | `11539` | Confirm with the provider before launch. |
+| `WORLD_CASINO_9WICKET_SOURCE_GAME_UIDS` | `<legacy-source-game-uid>` | Optional legacy IDs that resolve to 9Wicket. |
+| `HEALTH_CHECK_KEY` | `<new-strong-random-string>` | Required for `/api/9wicket/health` in production. Send as `x-health-key` or `?key=`. |
+| `ALLOWED_ORIGINS` | `https://bajiman-client-one.vercel.app,https://bajiman-admin-seven.vercel.app,https://bajiman-affiliate-brown.vercel.app,https://bajiman-brand-five.vercel.app,https://bajiman-guide-sigma.vercel.app` | Comma-separated credentialed browser origins. |
+| `PROVIDER_RELAY_URL` | `https://<static-egress-host>/api/provider-relay` | Required for 9Wicket on Vercel unless the provider whitelists the current Vercel egress. |
+| `PROVIDER_RELAY_KEY` | `<same-value-as-relay-RELAY_SHARED_SECRET>` | Server-side only. |
+| `OUTBOUND_PROXY_URL` | *(empty unless using a static HTTP proxy)* | Alternative to the relay; use `http://user:pass@STATIC_IP:PORT`. |
 
-> The server also accepts `NINEWICKET_*` names directly; the `WORLD_CASINO_*`
-> names above are auto-mapped, so you only need one set.
-
-**MongoDB Atlas:** Network Access → allow the server's egress. On Vercel that
-means `0.0.0.0/0` (serverless IPs are dynamic) or a static-IP egress.
-
----
+The server accepts the equivalent `NINEWICKET_*` names directly. Do not set both families to conflicting values.
 
 ## 2) CLIENT project (`bajiman-client-one`)
 
-Root directory: `client`
+Root directory: `client`.
 
-Two supported wiring modes — pick ONE:
+Choose one wiring mode:
 
-**Mode A — client calls the server directly (simplest):**
+### Mode A — direct backend (simplest)
 
 | Key | Value |
 |-----|-------|
 | `VITE_API_URL` | `https://bajiman-server.vercel.app` |
 
-**Mode B — go through the built-in serverless proxy** (`client/api/[...path].js`,
-used when `VITE_API_URL` is empty and requests hit `/api/*` on the client origin):
+### Mode B — same-origin serverless proxy
 
-| Key | Value | Notes |
-|-----|-------|-------|
-| `VITE_API_URL` | *(leave empty)* | Forces same-origin `/api/*` calls. |
-| `BACKEND_API_URL` | `https://bajiman-server.vercel.app` | Where the proxy forwards. |
-| `VERCEL_BYPASS_SECRET` | *(only if the server project has Deployment Protection on)* | Sent as `x-vercel-protection-bypass`. |
+| Key | Value |
+|-----|-------|
+| `VITE_API_URL` | *(empty)* |
+| `BACKEND_API_URL` | `https://bajiman-server.vercel.app` |
+| `VERCEL_BYPASS_SECRET` | *(only when server Deployment Protection is enabled)* |
 
-Optional cross-app links used by the client UI (set to the deployed URLs):
+Optional build-time links:
 
 | Key | Value |
 |-----|-------|
@@ -67,76 +58,67 @@ Optional cross-app links used by the client UI (set to the deployed URLs):
 | `VITE_BRAND_URL` | `https://bajiman-brand-five.vercel.app` |
 | `VITE_GUIDE_URL` | `https://bajiman-guide-sigma.vercel.app` |
 
-> `VITE_*` values are baked in at **build time** — redeploy after changing them.
+`VITE_*` values are embedded at build time; redeploy after changing them.
 
----
+## 3) ADMIN project (`admin`)
 
-## 3) ADMIN project (`admin`) — if deployed
-
-Root directory: `admin`
+Root directory: `admin`.
 
 | Key | Value |
 |-----|-------|
 | `VITE_API_URL` | `https://bajiman-server.vercel.app` |
 
-(Admin also ships a `admin/api/[...path].js` proxy; if you use it, set
-`BACKEND_API_URL` the same way as the client Mode B.)
+The admin proxy also supports Mode B with `BACKEND_API_URL` and, when needed, `VERCEL_BYPASS_SECRET`.
 
----
-
-## 4) AFFILIATE / BRAND / GUIDE — if deployed
+## 4) AFFILIATE / BRAND / GUIDE projects
 
 | Project | Key | Value |
 |---------|-----|-------|
-| affiliate (`bajiman-affiliate-brown`) | `VITE_API_URL` | `https://bajiman-server.vercel.app` |
+| affiliate | `VITE_API_URL` | `https://bajiman-server.vercel.app` |
 | affiliate | `VITE_CLIENT_URL` | `https://bajiman-client-one.vercel.app` |
-| Brand (`bajiman-brand-five`) | `VITE_CLIENT_URL` / `VITE_REGISTER_URL` | `https://bajiman-client-one.vercel.app` |
-| Guide (`bajiman-guide-sigma`) | `VITE_CLIENT_URL` | `https://bajiman-client-one.vercel.app` |
+| Brand | `VITE_CLIENT_URL`, `VITE_REGISTER_URL` | `https://bajiman-client-one.vercel.app` |
+| Guide | `VITE_CLIENT_URL` | `https://bajiman-client-one.vercel.app` |
 
----
+## 5) Required fix for the current live failure: static provider egress
 
-## ⚠️ Static egress (keep 9Wicket working when the provider tightens whitelisting)
+The live health check currently reports:
 
-The provider whitelists by **source IP**. Vercel serverless egress IPs are
-**dynamic**, so a launch can start failing with `IP <x> not whitelisted` at any
-time. Three options, pick ONE:
+> `IP 100.53.60.85 not whitelisted. Please contact administrator to whitelist your IP.`
 
-### Option 1 — Provider relay through a whitelisted host (no extra infra)
+This is expected when Vercel calls the provider directly: Vercel serverless egress IPs are dynamic. Pick **one** production solution:
 
-The server ships an authenticated forward-relay at `POST /api/provider-relay`.
-Run the same server code on any host whose IP is whitelisted at the provider
-(e.g. a VPS, or the Emergent preview pod) with `RELAY_SHARED_SECRET` set, then
-on the **Vercel server project** add:
+### Recommended: a small VPS relay with a fixed public IP
 
-|| Key | Value |
-||-----|-------|
-|| `PROVIDER_RELAY_URL` | `https://<whitelisted-host>/api/provider-relay` |
-|| `PROVIDER_RELAY_KEY` | *(same value as that host's `RELAY_SHARED_SECRET`)* |
+1. Provision a VPS with a stable public IPv4 address and ask the World Casino administrator to whitelist that address.
+2. Copy this repository to the VPS and run the backend from `server` with `VERCEL=0`, `RELAY_SHARED_SECRET=<new-random-secret>`, the provider settings above, and the required database settings.
+3. Put HTTPS in front of the VPS (for example, Caddy or Nginx) and expose only `POST /api/provider-relay` to the Vercel server. The route is key-guarded and path-locked to the configured provider API.
+4. Set `PROVIDER_RELAY_URL` and `PROVIDER_RELAY_KEY` in the Vercel server project. `PROVIDER_RELAY_KEY` must equal the VPS `RELAY_SHARED_SECRET`.
+5. Redeploy the Vercel server and verify the health response shows `config.relayConfigured: true` and `providerCheck.ipWhitelisted: true`.
 
-All provider calls (launch, inquiry, cashout, transactions) are then forwarded
-through the whitelisted host. The relay is path-locked to `WORLD_CASINO_API_URL`
-and key-guarded, so it cannot be abused as an open proxy. Health shows
-`config.relayConfigured: true` when active.
+The repository includes `server/Dockerfile` for this relay host. A preview pod is suitable only for a temporary demo because its public IP changes after restart.
 
-> Emergent preview pods change IP on restart — fine for demos, not for
-> production. Use a VPS for a permanent relay.
+### Alternative: static HTTP proxy
 
-### Option 2 — Static-IP HTTP proxy
+Provision a static-egress HTTP proxy, whitelist its public IP with World Casino, then set `OUTBOUND_PROXY_URL` on the Vercel server. Leave it empty only when the provider explicitly whitelists the current hosting egress.
 
-1. Stand up (or rent) an HTTP proxy that has a **static outbound IP**
-   (e.g. a small VPS running Squid/tinyproxy, or a managed static-egress /
-   fixed-IP proxy service).
-2. Give that static IP to the World Casino admin to **whitelist**.
-3. Set `OUTBOUND_PROXY_URL` on the **server** project, e.g.
-   `http://user:pass@STATIC_IP:8080` (or `https://…`). Leave it empty to send
-   traffic directly (works only where the host IP itself is whitelisted).
+### Alternative: move the backend off Vercel
 
-### Option 3 — Move the backend off Vercel
+Run the entire Express backend on a VPS/container with a stable public IP, whitelist that IP, and point all `VITE_API_URL` values to the new HTTPS backend.
 
-Host the Express server on a VPS/container with its own stable
-IP instead of Vercel serverless, and whitelist that IP directly.
+## 6) Verification checklist
 
-Verify anytime with:
-`GET https://bajiman-server.vercel.app/api/9wicket/health` (with the
-`x-health-key` header). Check `config.relayConfigured` /
-`config.outboundProxyConfigured` and `providerCheck.ipWhitelisted`.
+```bash
+curl -sS -H 'x-health-key: <HEALTH_CHECK_KEY>' \
+  https://bajiman-server.vercel.app/api/9wicket/health | jq
+```
+
+A working provider path must report:
+
+```json
+{
+  "config": { "relayConfigured": true },
+  "providerCheck": { "reachable": true, "ok": true, "ipWhitelisted": true }
+}
+```
+
+Also test a browser login, a protected API request, game launch, provider callback, and return-to-lobby flow after redeploying. If any old credential was real, rotate it before testing production.
