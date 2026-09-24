@@ -122,3 +122,32 @@ A working provider path must report:
 ```
 
 Also test a browser login, a protected API request, game launch, provider callback, and return-to-lobby flow after redeploying. If any old credential was real, rotate it before testing production.
+
+
+## 7) Provider game-session troubleshooting
+
+### Blank white game page
+
+Use a single fresh launch URL in a full browser tab. Provider launch links may be one-time-use; refreshing or reopening an old link can produce `Launch link expired`. Open browser Developer Tools before launching, enable **Preserve log** and **Disable cache**, filter the Network panel by `playerService`, and inspect `queryInitInfo`, `queryEventLabel`, `getFingerprintProPublicKey`, `accountTracker`, and `testLine`.
+
+If the provider terms dialog appears, manually accept it before judging the game page. Do not place a bet during diagnostics. Static JavaScript, CSS, `setting.json`, and `image-manifest.json` loading proves only that the frontend host is reachable; the player-session API must also return a non-empty response.
+
+### CORS and blocked requests
+
+`testLine` returning HTTP 200 while initialization calls return zero bytes indicates that the provider host is reachable and is not suffering from a general browser CORS failure. Inspect each request's status, `Origin`, `Referer`, cookies, request headers, response headers, and Timing panel. `(blocked:cors)` indicates an origin/credential policy problem; `401` or `403` indicates an invalid or expired player session; `5xx` indicates a provider backend failure; an indefinitely pending request indicates network, proxy, firewall, or provider edge trouble.
+
+The browser cannot expose cross-origin response headers to page JavaScript unless the provider grants access with the appropriate `Access-Control-Allow-Origin`, `Access-Control-Allow-Credentials`, and related headers. Do not work around this by disabling browser security in production. Ask the provider to allow the actual game origin and confirm the generated game session is valid for game UID `11539`, currency `BDT`, and the configured callback and return URLs.
+
+### Validating a session token
+
+`WORLD_CASINO_TOKEN` authenticates the backend API; the `t=` value in a returned game URL is a one-time player launch credential. Preserve the URL exactly and do not paste it into logs or chat. A successful launch should return `success: true`, `provider: "9wicket"`, a numeric `sessionId`, `data.session_id`, `data.game_uid: "11539"`, and a non-empty game URL. The protected `/api/9wicket/inquiry` endpoint is the safest server-side follow-up because it checks the provider wallet without creating another launch.
+
+### `No active 9Wicket session`
+
+This message is returned by `POST /api/9wicket/cashout`, not by the inquiry route. Cashout requires a local `NineWicketSession` belonging to the current authenticated user with `status: "active"`. Check the `ninewicketsessions` collection by `sessionId`, the authenticated user's ObjectId, and the status before retrying. `launching`, `failed`, `ended`, `cashout_pending`, and `cashed_out` are not eligible for a new cashout. Do not manually change a session or retry blindly until provider transaction history and local wallet accounting are reconciled.
+
+For a diagnostic session, inspect these fields read-only: `sessionId`, `user`, `userId`, `gameUid`, `launchAmount`, `lastProviderBalance`, `status`, `lastError`, `startedAt`, `endedAt`, `cashedOutAt`, `createdAt`, and `updatedAt`. A missing record commonly means the launch used a different database or deployment. A session in `ended` may have been closed by a provider `session_end` callback. A session in `cashed_out` has already been reconciled.
+
+### Provider escalation packet
+
+If static assets load but player initialization remains empty after terms acceptance, send the provider the session ID, game UID `11539`, currency `BDT`, UTC test time, API hostnames, request statuses, Timing results, and the exact provider error. Do not send backend JWTs, MongoDB URIs, provider secrets, or full one-time launch URLs.
