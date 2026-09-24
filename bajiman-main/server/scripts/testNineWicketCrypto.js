@@ -2,9 +2,14 @@
 import assert from "node:assert/strict";
 import { decryptPayload, encryptPayload } from "../services/nineWicketCrypto.js";
 
-const secret = String(process.env.NINEWICKET_SECRET || "");
+const secret = String(
+  process.env.SOFTAPI_SECRET ||
+    process.env.IGAMING_API_SECRET ||
+    process.env.NINEWICKET_SECRET ||
+    "",
+);
 if (Buffer.byteLength(secret, "utf8") !== 32) {
-  console.error("NINEWICKET_SECRET must be exactly 32 UTF-8 bytes.");
+  console.error("SOFTAPI_SECRET, IGAMING_API_SECRET, or NINEWICKET_SECRET must be exactly 32 UTF-8 bytes.");
   process.exit(1);
 }
 
