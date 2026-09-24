@@ -1,0 +1,34 @@
+{
+  "summary": "Retested the frontend game-launch flow after the PlayGame.jsx try/catch fix. TEST 1 (primary fix scenario, /play-game/11539 WITHOUT ?uid=): PASS. Even though GET /api/global/client/play-game/11539 still 404s (catalog empty), the new try/catch block falls back to using the route param as the provider game UID, POST /api/9wicket/launch is called (200), and the game iframe renders with src=https://igamingapis.live/9w/play?t=... . The old 'Game not found' failure state no longer appears. TEST 2 regression (/play-game/11539?uid=11539): PASS after re-seeding demo01 (balance had been depleted by prior test runs). Iframe renders with a real igamingapis provider URL. Backend was intentionally NOT re-tested (per iteration_1: 9/9 passing).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "PlayGame launch effect fires twice per mount (React StrictMode)",
+        "issue": "POST /api/9wicket/launch is invoked twice on every /play-game/:gameId mount. This wastes provider sessions and, once the wallet is close to 0, causes the second call to 400 'Insufficient balance'. In the observed happy path the second (or first) call still succeeds so the iframe eventually renders, but the console shows a spurious 'PlayGame launch error' every load and each successful visit reserves 2x the intended amount (~20 instead of 10). Recommend guarding launchGame() with a ref/AbortController or moving it out of a plain useEffect.",
+        "affected_selectors": ["PlayGame.jsx useEffect -> launchGame"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_bajiman_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "(Optional) Guard PlayGame.jsx launch effect against React StrictMode double-invocation using a useRef flag or AbortController so only one /api/9wicket/launch is fired per mount.",
+    "(Optional, from iter_1) Seed the games collection so /api/global/client/play-game/:gameId returns 200 and lobby cards work normally; catalog-lookup fallback would then be defensive rather than the primary code path.",
+    "(Optional, from iter_1) Add an in-game Cashout / Exit button so users can return provider funds to the local wallet before closing the tab."
+  ],
+  "critical_code_review_comments": [
+    "PlayGame.jsx launch effect double-fire under StrictMode (see integration_issues). Needs a ref guard.",
+    "PlayGame.jsx still reads token from three fallback keys (user_token / token / accessToken). Pick one canonical key everywhere to avoid future drift.",
+    "Redux `isAuth` gate in launchGame means logging in only via localStorage token (skipping the modal) won't work; UI login is the only path — acceptable but worth documenting for tests."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not re-tested (100% in iteration_1)", "frontend": "100% for the retested launch flow (2/2)"},
+  "test_credentials": "demo01 / demo1234 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Ran `cd /app/bajiman-main/server && node scripts/seedTestUser.js` once mid-test to reset demo01 balance to 2000 BDT after earlier launches depleted it.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Fix verified. Only outstanding items are cosmetic/optimizations (StrictMode double launch, catalog seeding, in-game cashout button). Backend remained untouched and does not need re-testing. When testing PlayGame, re-seed demo01 first because each mount currently consumes ~20 BDT (double-invoke bug) and the wallet can hit 0 fast.",
+  "rca_of_the_issue": "iteration_1 root cause was that PlayGame.jsx unconditionally called GET /api/global/client/play-game/:gameId and threw on 404 (empty catalog). Fix wraps that lookup in try/catch and falls back to `resolvedGameUid = gameId` (route param) before POSTing /api/9wicket/launch. Verified in this iteration: catalog GET still 404s, but launch POST proceeds and returns a valid provider URL, iframe renders."
+}

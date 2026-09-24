@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { useSelector } from "react-redux";
 import axios from "axios";
@@ -33,6 +33,7 @@ const PlayGame = () => {
   const [errorText, setErrorText] = useState("");
   const [demoAvailable, setDemoAvailable] = useState(false);
   const [hasTried, setHasTried] = useState(false);
+  const launchKeyRef = useRef("");
 
   const uidFromQuery = searchParams.get("uid") || "";
 
@@ -77,6 +78,14 @@ const PlayGame = () => {
       navigate("/", { replace: true });
       return;
     }
+
+    // Launch exactly once per target. React StrictMode (and auth
+    // resolving) can fire this effect twice; without a guard each extra
+    // call reserves the amount again and can cause a spurious
+    // "Insufficient balance". Reset on failure so "Try Again" works.
+    const launchKey = `${gameId}|${uidFromQuery}`;
+    if (launchKeyRef.current === launchKey) return;
+    launchKeyRef.current = launchKey;
 
     try {
       setLoading(true);
@@ -139,6 +148,7 @@ const PlayGame = () => {
       setLaunchUrl(url);
     } catch (error) {
       console.error("PlayGame launch error:", error?.response?.data || error);
+      launchKeyRef.current = "";
 
       const providerCode = error?.response?.data?.code;
       setDemoAvailable(providerCode === "NINEWICKET_REQUIRES_INITIAL_CREDIT");
