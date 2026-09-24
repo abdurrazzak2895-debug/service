@@ -7,11 +7,19 @@ import WithdrawMethod from "../models/WithdrawMethod.js";
 dotenv.config();
 const mongoUri = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/bajiman";
 
+const IMG = "https://static.prod-images.emergentagent.com/jobs/40967c6c-9fd4-45f1-970c-7a219d69e691/images/";
+const logo = {
+  bkash: IMG + "d6c4a5cc9a1d0ed49b608a1ef1886743b03d72fa4e6e277b2d5886181346500d.jpeg",
+  nagad: IMG + "ec560c931219f80c95090941f998e45119b351d5e6776f73415532ca65148717.jpeg",
+  rocket: IMG + "14e150c86c27942c86b989967a4ab019c3c7864ae85d1823bdc86a0640962a3e.jpeg",
+};
+
 const depositMethods = [
   {
     methodId: "bkash",
     methodName: { bn: "বিকাশ", en: "bKash" },
     methodType: "agent",
+    logoUrl: logo.bkash,
     minDepositAmount: 100,
     maxDepositAmount: 30000,
     contacts: [
@@ -33,6 +41,7 @@ const depositMethods = [
     methodId: "nagad",
     methodName: { bn: "নগদ", en: "Nagad" },
     methodType: "agent",
+    logoUrl: logo.nagad,
     minDepositAmount: 100,
     maxDepositAmount: 25000,
     contacts: [
@@ -52,6 +61,7 @@ const depositMethods = [
     methodId: "rocket",
     methodName: { bn: "রকেট", en: "Rocket" },
     methodType: "agent",
+    logoUrl: logo.rocket,
     minDepositAmount: 200,
     maxDepositAmount: 20000,
     contacts: [
@@ -68,9 +78,9 @@ const depositMethods = [
 ];
 
 const withdrawMethods = [
-  { methodId: "BKASH", name: { bn: "বিকাশ", en: "bKash" }, minimumWithdrawAmount: 500, maximumWithdrawAmount: 25000, isActive: true },
-  { methodId: "NAGAD", name: { bn: "নগদ", en: "Nagad" }, minimumWithdrawAmount: 500, maximumWithdrawAmount: 25000, isActive: true },
-  { methodId: "ROCKET", name: { bn: "রকেট", en: "Rocket" }, minimumWithdrawAmount: 500, maximumWithdrawAmount: 20000, isActive: true },
+  { methodId: "BKASH", name: { bn: "বিকাশ", en: "bKash" }, logoUrl: logo.bkash, minimumWithdrawAmount: 500, maximumWithdrawAmount: 25000, isActive: true },
+  { methodId: "NAGAD", name: { bn: "নগদ", en: "Nagad" }, logoUrl: logo.nagad, minimumWithdrawAmount: 500, maximumWithdrawAmount: 25000, isActive: true },
+  { methodId: "ROCKET", name: { bn: "রকেট", en: "Rocket" }, logoUrl: logo.rocket, minimumWithdrawAmount: 500, maximumWithdrawAmount: 20000, isActive: true },
 ];
 
 const run = async () => {

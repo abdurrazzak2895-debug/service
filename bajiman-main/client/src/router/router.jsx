@@ -11,6 +11,7 @@ import Games from "../pages/Games/Games";
 import PlayGame from "../pages/PlayGame/PlayGame";
 import DemoGame from "../pages/DemoGame/DemoGame";
 import WheelSpin from "../pages/Reward/WheelSpin";
+import Promotions from "../pages/Promotions/Promotions";
 
 export const routes = createBrowserRouter([
   {
@@ -25,6 +26,10 @@ export const routes = createBrowserRouter([
       {
         path: "games",
         element: <Games />,
+      },
+      {
+        path: "promotion",
+        element: <Promotions />,
       },
       {
         path: "/play-game/:gameId",
