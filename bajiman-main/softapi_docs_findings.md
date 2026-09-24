@@ -67,6 +67,8 @@ The launch endpoint is **not** the public catalog URL. It is the portal-specific
 
 The supplied agent code grants access to the documentation page, but the `My account` page redirects to the separate email/password login. The documentation page itself exposes only the literal placeholder **Provided By IGAMING KEY**, not the account's actual URL. Therefore the account login or the provider-issued launch URL is still required to finish this mapping.
 
+The production credentials supplied separately were tested without being written to the repository or deployment configuration. A read-only request to `GET https://world-casino-api.com/api/v1/9w/transactions` returned HTTP 200 with provider `code=0` and an empty transaction result for test user `1001`. This confirms the existing World Casino/9Wicket API URL, token, secret length, and network connectivity; it does **not** identify or validate the SoftAPI portal launch endpoint.
+
 The remaining deployment inputs are:
 
 1. The exact SoftAPI launch URL from the authenticated portal. The public catalog does not provide it; the documentation labels it **Provided By IGAMING KEY**.
