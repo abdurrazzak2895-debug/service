@@ -8,6 +8,10 @@ import {
   isOracleProvider,
   launchOracleGame,
 } from "./oracleGameLaunchRoutes.js";
+import {
+  isYellowBatProvider,
+  launchYellowBatGame,
+} from "./yellowBatLaunchRoutes.js";
 
 const router = express.Router();
 
@@ -108,6 +112,17 @@ router.post("/launch", protectUser, async (req, res, next) => {
       };
 
       return launchOracleGame(req, res);
+    }
+
+    if (isYellowBatProvider(provider)) {
+      req.body = {
+        ...req.body,
+        gameID: clean(game.gameUId),
+        game_uid: clean(game.gameUId),
+        gameId: clean(game.gameUId),
+      };
+
+      return launchYellowBatGame(req, res);
     }
 
     return res.status(501).json({
