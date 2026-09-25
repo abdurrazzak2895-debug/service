@@ -81,15 +81,25 @@ The admin proxy also supports Mode B with `BACKEND_API_URL` and, when needed, `V
 
 ## 5) Required fix for the current live failure: static provider egress
 
-The live health check currently reports:
+The previously recorded live health check reported:
 
 > `IP 100.53.60.85 not whitelisted. Please contact administrator to whitelist your IP.`
 
-This is expected when Vercel calls the provider directly: Vercel serverless egress IPs are dynamic. Pick **one** production solution:
+This was the egress address seen by that check; it is not the VPS address listed below. Vercel serverless egress IPs are dynamic, so provider calls should use a fixed-egress host unless the provider separately whitelists Vercel's current egress. Pick **one** production solution:
 
 ### Recommended: a small VPS relay with a fixed public IP
 
-1. Provision a VPS with a stable public IPv4 address and ask the World Casino administrator to whitelist that address.
+Current VPS target supplied for this deployment (not yet independently verified):
+
+| Setting | Value |
+|---------|-------|
+| SSH alias / host label | `ipms-production` |
+| Public IPv4 supplied | `128.140.100.85` |
+| SSH user supplied | `root` |
+
+Do not put the SSH password, provider credentials, or relay key in this repository. Before relying on the address, verify from the VPS that its public outbound IPv4 is `128.140.100.85` (for example, `curl -4 https://api.ipify.org`) and confirm the address is static with the VPS provider. Ask the World Casino administrator to whitelist that verified egress IP; an SSH destination IP is not automatically the outbound IP.
+
+1. Verify the VPS has a stable public IPv4 address and ask the World Casino administrator to whitelist that address.
 2. Copy this repository to the VPS and run the backend from `server` with `VERCEL=0`, `RELAY_SHARED_SECRET=<new-random-secret>`, the provider settings above, and the required database settings.
 3. Put HTTPS in front of the VPS (for example, Caddy or Nginx) and expose only `POST /api/provider-relay` to the Vercel server. The route is key-guarded and path-locked to the configured provider API.
 4. Set `PROVIDER_RELAY_URL` and `PROVIDER_RELAY_KEY` in the Vercel server project. `PROVIDER_RELAY_KEY` must equal the VPS `RELAY_SHARED_SECRET`.
