@@ -6,8 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "test": "npm run test:ninewicket",
+    "test": "npm run test:ninewicket && npm run test:softapi-integration && npm run test:launch-routing",
     "test:ninewicket": "node scripts/testNineWicketCrypto.js",
+    "test:softapi-integration": "node scripts/testSoftApiIntegration.js",
     "test:softapi-payload": "node scripts/testSoftApiPayload.js",
     "test:live-world-launch": "node scripts/testLiveWorldLaunch.js",
     "test:launch-routing": "node scripts/testGameLaunchRouting.js",

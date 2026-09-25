@@ -1,72 +1,51 @@
 #!/usr/bin/env node
-
 import "dotenv/config";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
-import { decryptPayload, encryptPayload } from "../services/nineWicketCrypto.js";
+import { buildSoftApiLaunchRequest, resolveSoftApiConfig } from "../services/softApiService.js";
+import { decryptSoftApiPayload } from "../services/softApiCrypto.js";
 
-const first = (...names) =>
-  names.map((name) => String(process.env[name] || "").trim()).find(Boolean) || "";
+const config = resolveSoftApiConfig();
+if (!config.token) throw new Error("Set SOFTAPI_TOKEN or IGAMING_API_TOKEN");
+if (!config.secret) throw new Error("Set SOFTAPI_SECRET or IGAMING_API_SECRET");
+if (!config.launchUrl) throw new Error("Set SOFTAPI_LAUNCH_URL or IGAMING_LAUNCH_URL from the provider portal");
+if (!config.callbackUrl) throw new Error("Set SOFTAPI_CALLBACK_URL or IGAMING_CALLBACK_URL");
+if (!config.returnUrl) throw new Error("Set SOFTAPI_RETURN_URL or IGAMING_RETURN_URL");
 
-const token = first("SOFTAPI_TOKEN", "IGAMING_API_TOKEN", "NINEWICKET_TOKEN", "WORLD_CASINO_TOKEN");
-const secret = first("SOFTAPI_SECRET", "IGAMING_API_SECRET", "NINEWICKET_SECRET", "WORLD_CASINO_SECRET");
-const launchUrl = first("SOFTAPI_LAUNCH_URL", "IGAMING_LAUNCH_URL", "NINEWICKET_LAUNCH_URL");
-const gameUid = first("SOFTAPI_GAME_UID", "IGAMING_GAME_UID", "NINEWICKET_GAME_UID", "GAME_UID");
-const callback = first("SOFTAPI_CALLBACK_URL", "IGAMING_CALLBACK_URL", "NINEWICKET_CALLBACK_URL") || "https://example.com/api/softapi/callback";
-const returnUrl = first("SOFTAPI_RETURN_URL", "IGAMING_RETURN_URL", "NINEWICKET_RETURN_URL") || "https://example.com/lobby";
-const currencyCode = first("SOFTAPI_CURRENCY_CODE", "IGAMING_CURRENCY_CODE", "NINEWICKET_CURRENCY", "WORLD_CASINO_CURRENCY") || "BDT";
-const userId = first("SOFTAPI_TEST_USER_ID", "IGAMING_TEST_USER_ID") || "1001";
+const gameUid = String(process.env.SOFTAPI_GAME_UID || process.env.IGAMING_GAME_UID || "").trim();
+if (!gameUid) throw new Error("Set SOFTAPI_GAME_UID or IGAMING_GAME_UID from the provider catalog");
+const userId = Number(process.env.SOFTAPI_TEST_USER_ID || process.env.IGAMING_TEST_USER_ID || "1001");
 const balance = Number(process.env.SOFTAPI_TEST_BALANCE || process.env.IGAMING_TEST_BALANCE || "0");
-
-if (!token) throw new Error("Missing provider token alias");
-if (Buffer.byteLength(secret, "utf8") !== 32) {
-  throw new Error("Provider secret must be exactly 32 UTF-8 bytes");
-}
-if (!gameUid) throw new Error("Missing game UID; set SOFTAPI_GAME_UID, IGAMING_GAME_UID, NINEWICKET_GAME_UID, or GAME_UID");
+if (!Number.isSafeInteger(userId) || userId <= 0) throw new Error("Test user ID must be a positive safe integer");
 if (!Number.isFinite(balance) || balance < 0) throw new Error("Test balance must be a non-negative number");
-if (!/^https:\/\//i.test(callback) || !/^https:\/\//i.test(returnUrl)) {
-  throw new Error("Callback and return URLs must use HTTPS");
-}
 
-const timestamp = Date.now();
-const plain = {
-  user_id: Number(userId) || userId,
-  balance,
-  game_uid: gameUid,
-  token,
-  timestamp,
-  return: returnUrl,
-  callback,
-  currency_code: currencyCode.toUpperCase(),
-};
+const request = buildSoftApiLaunchRequest(
+  { userId, balance, gameUid },
+  { now: Date.now() },
+);
+const plain = decryptSoftApiPayload(request.body.payload, config.secret);
+assert.equal(request.body.token, plain.token, "Outer and plaintext tokens must match");
+assert.equal(plain.user_id, userId);
+assert.equal(plain.game_uid, gameUid);
+assert.ok(Math.abs(Date.now() - plain.timestamp) < 60_000, "Launch timestamp must be fresh");
 
-const ciphertext = encryptPayload(plain);
-const outer = { token, payload: ciphertext };
-const roundTrip = decryptPayload(outer.payload);
-
-assert.deepEqual(roundTrip, plain, "AES payload did not round-trip exactly");
-assert.equal(outer.token, roundTrip.token, "Outer and plaintext tokens do not match");
-assert.ok(Math.abs(Date.now() - roundTrip.timestamp) < 60_000, "Timestamp is not fresh");
-
-const endpoint = launchUrl ? new URL(launchUrl) : null;
-const fingerprint = crypto.createHash("sha256").update(ciphertext).digest("hex").slice(0, 16);
-
+const launchUrl = new URL(request.url);
+const fingerprint = crypto.createHash("sha256").update(request.body.payload).digest("hex").slice(0, 16);
 console.log(JSON.stringify({
   ok: true,
   mode: "dry-run-no-network",
   encryption: "AES-256-ECB-PKCS7-Base64",
-  secretBytes: Buffer.byteLength(secret, "utf8"),
-  tokenLength: token.length,
-  outerTokenMatchesPlaintext: outer.token === roundTrip.token,
-  timestampAgeMs: Date.now() - roundTrip.timestamp,
-  gameUid: roundTrip.game_uid,
-  balance: roundTrip.balance,
-  currencyCode: roundTrip.currency_code,
-  callbackHttps: /^https:\/\//i.test(roundTrip.callback),
-  returnHttps: /^https:\/\//i.test(roundTrip.return),
-  launchEndpointConfigured: Boolean(endpoint),
-  launchEndpoint: endpoint ? `${endpoint.origin}${endpoint.pathname}` : null,
-  ciphertextBytes: Buffer.byteLength(ciphertext, "utf8"),
+  secretBytes: Buffer.byteLength(config.secret, "utf8"),
+  tokenLength: config.token.length,
+  outerTokenMatchesPlaintext: request.body.token === plain.token,
+  timestampAgeMs: Date.now() - plain.timestamp,
+  gameUid: plain.game_uid,
+  balance: plain.balance,
+  currencyCode: plain.currency_code,
+  callbackHttps: new URL(plain.callback).protocol === "https:",
+  returnHttps: new URL(plain.return).protocol === "https:",
+  launchEndpoint: `${launchUrl.origin}${launchUrl.pathname}`,
+  ciphertextBytes: Buffer.byteLength(request.body.payload, "utf8"),
   ciphertextSha256Prefix: fingerprint,
   providerRequestSent: false,
 }));

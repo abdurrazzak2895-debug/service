@@ -27,7 +27,22 @@ Root directory: `server`.
 | `PROVIDER_RELAY_KEY` | `<same-value-as-relay-RELAY_SHARED_SECRET>` | Server-side only. |
 | `OUTBOUND_PROXY_URL` | *(empty unless using a static HTTP proxy)* | Alternative to the relay; use `http://user:pass@STATIC_IP:PORT`. |
 
-The server accepts the equivalent `NINEWICKET_*` names directly. Do not set both families to conflicting values.
+`NINEWICKET_*` and `WORLD_CASINO_*` belong only to the existing 9Wicket transfer-wallet integration. SoftAPI/IGAMING uses separate variables below; do not reuse one provider's credentials for the other.
+
+### Optional SoftAPI / IGAMING integration (not live-configured)
+
+| Key | Value | Notes |
+|-----|-------|-------|
+| `SOFTAPI_LAUNCH_URL` | `<Provided By IGAMING KEY from the provider account>` | Required for launch; never guess this account-specific endpoint. `IGAMING_LAUNCH_URL` is an alias. |
+| `SOFTAPI_TOKEN` | `<SoftAPI API Token>` | Server-side only. `IGAMING_API_TOKEN` is an alias. |
+| `SOFTAPI_SECRET` | `<exactly 32 UTF-8 bytes>` | Server-side only. `IGAMING_API_SECRET` is an alias. |
+| `SOFTAPI_CALLBACK_URL` | `https://<backend-domain>/api/softapi/callback` | Public HTTPS URL; no user auth header is required. |
+| `SOFTAPI_RETURN_URL` | `https://<client-domain>/lobby` | Public HTTPS lobby URL. |
+| `SOFTAPI_GAME_UID` | `<game_code from /provider/brands/>` | The catalog's `game_code`, not a World Casino UID. |
+| `SOFTAPI_CURRENCY_CODE` | `BDT` | The player's play currency as accepted by the account. |
+| `SOFTAPI_CALLBACK_ENCRYPTION_MODE` | `required` | Default. Set to `optional` only if the provider account sends plaintext callbacks (`enc=0`). |
+
+The isolated SoftAPI callback stores notify-only events in `softapi_callback_events` and never changes `User.balance`. The launch adapter is a server-side service; it is not wired into `/api/game/launch` until the exact account URL, provider/catalog mapping, and wallet synchronization policy are confirmed.
 
 ## 2) CLIENT project (`bajiman-client-one`)
 

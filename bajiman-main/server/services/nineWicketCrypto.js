@@ -2,9 +2,7 @@ import crypto from "node:crypto";
 
 const getSecret = () =>
   String(
-    process.env.SOFTAPI_SECRET ||
-      process.env.IGAMING_API_SECRET ||
-      process.env.NINEWICKET_SECRET ||
+    process.env.NINEWICKET_SECRET ||
       process.env.WORLD_CASINO_SECRET ||
       "",
   );
@@ -12,7 +10,7 @@ const getSecret = () =>
 const requireSecret = () => {
   const value = getSecret();
   if (Buffer.byteLength(value, "utf8") !== 32) {
-    throw new Error("NINEWICKET_SECRET must be exactly 32 UTF-8 bytes");
+    throw new Error("NINEWICKET_SECRET or WORLD_CASINO_SECRET must be exactly 32 UTF-8 bytes");
   }
   return value;
 };

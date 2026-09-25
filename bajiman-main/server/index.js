@@ -84,6 +84,7 @@ import oracleSyncRoutes from "./routes/oracleSyncRoutes.js";
 import nineWicketRoutes from "./routes/nineWicketRoutes.js";
 import gameLaunchRoutes from "./routes/gameLaunchRoutes.js";
 import providerRelayRoutes from "./routes/providerRelayRoutes.js";
+import softApiCallbackRoutes from "./routes/softApiCallbackRoutes.js";
 import countryRoutes from "./routes/countryRoutes.js";
 
 dotenv.config();
@@ -202,6 +203,7 @@ app.use("/api/play-game", playGameRoutes);
 // through catalog/provider validation before reaching a provider handler.
 app.use("/api/game", gameLaunchRoutes);
 app.use("/api/callback", callbackRoutes);
+app.use("/api/softapi", softApiCallbackRoutes);
 app.use("/api/game-history", gameHistoryRoutes);
 
 // client site controller

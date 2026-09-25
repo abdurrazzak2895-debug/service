@@ -5,50 +5,33 @@ export { decryptPayload, encryptPayload };
 
 const apiUrl = () =>
   String(
-    process.env.SOFTAPI_API_BASE ||
-      process.env.IGAMING_API_BASE ||
-      process.env.NINEWICKET_API_BASE ||
+    process.env.NINEWICKET_API_BASE ||
       process.env.WORLD_CASINO_API_BASE ||
       process.env.WORLD_CASINO_API_URL ||
       "https://world-casino-api.com/api/v1",
   ).replace(/\/+$/, "");
 const launchUrl = () =>
   String(
-    process.env.SOFTAPI_LAUNCH_URL ||
-      process.env.IGAMING_LAUNCH_URL ||
-      process.env.NINEWICKET_LAUNCH_URL ||
+    process.env.NINEWICKET_LAUNCH_URL ||
       "",
   ).trim();
 const token = () =>
   String(
-    process.env.SOFTAPI_TOKEN ||
-      process.env.IGAMING_API_TOKEN ||
-      process.env.NINEWICKET_TOKEN ||
+    process.env.NINEWICKET_TOKEN ||
       process.env.WORLD_CASINO_TOKEN ||
       "",
   ).trim();
 const secret = () =>
   String(
-    process.env.SOFTAPI_SECRET ||
-      process.env.IGAMING_API_SECRET ||
-      process.env.NINEWICKET_SECRET ||
+    process.env.NINEWICKET_SECRET ||
       process.env.WORLD_CASINO_SECRET ||
       "",
   );
 
 const requireConfig = () => {
-  if (!token()) throw new Error("A provider token is missing (SOFTAPI_TOKEN, IGAMING_API_TOKEN, or NINEWICKET_TOKEN)");
+  if (!token()) throw new Error("NINEWICKET_TOKEN or WORLD_CASINO_TOKEN is required");
   if (Buffer.byteLength(secret(), "utf8") !== 32) {
-    throw new Error("The provider secret must be exactly 32 UTF-8 bytes");
-  }
-  const softApiCredentials = Boolean(
-    process.env.SOFTAPI_TOKEN ||
-      process.env.IGAMING_API_TOKEN ||
-      process.env.SOFTAPI_SECRET ||
-      process.env.IGAMING_API_SECRET,
-  );
-  if (softApiCredentials && !launchUrl()) {
-    throw new Error("SOFTAPI_LAUNCH_URL is required when SoftAPI credentials are configured");
+    throw new Error("NINEWICKET_SECRET or WORLD_CASINO_SECRET must be exactly 32 UTF-8 bytes");
   }
 };
 
