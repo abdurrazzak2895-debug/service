@@ -8,6 +8,8 @@ import {
 import {
   decryptSoftApiPayload,
   encryptSoftApiPayload,
+  requireSoftApiSecret,
+  resolveSoftApiSecret,
 } from "../services/softApiCrypto.js";
 import { parseSoftApiCallback } from "../services/softApiCallback.js";
 import SoftApiCallbackEvent from "../models/SoftApiCallbackEvent.js";
@@ -81,6 +83,44 @@ assert.throws(
   "SoftAPI must not silently reuse NineWicket credentials",
 );
 assert.equal(resolveSoftApiConfig({ IGAMING_API_TOKEN: token }).token, token);
+assert.equal(
+  resolveSoftApiSecret({ NINEWICKET_SECRET: secret }),
+  "",
+  "SoftAPI callback must not silently use NineWicket credentials",
+);
+assert.equal(
+  resolveSoftApiSecret({
+    SOFTAPI_SANDBOX_LAUNCH_ENABLED: "true",
+    SOFTAPI_SANDBOX_SECRET: secret,
+  }),
+  secret,
+  "enabled sandbox callbacks may use their dedicated sandbox secret",
+);
+assert.equal(
+  resolveSoftApiSecret({
+    SOFTAPI_SANDBOX_LAUNCH_ENABLED: "true",
+    SOFTAPI_SANDBOX_SECRET: secret,
+    SOFTAPI_SECRET: "fedcba9876543210fedcba9876543210",
+  }),
+  secret,
+  "the dedicated sandbox secret must win when the sandbox route is enabled",
+);
+const sharedCallbackEnv = {
+  SOFTAPI_SANDBOX_LAUNCH_ENABLED: "true",
+  SOFTAPI_SANDBOX_REUSE_WORLD_CASINO_CREDENTIALS: "true",
+  NINEWICKET_SECRET: secret,
+};
+assert.equal(resolveSoftApiSecret(sharedCallbackEnv), secret);
+const disabledSharedCallbackSecret = resolveSoftApiSecret({
+    SOFTAPI_SANDBOX_REUSE_WORLD_CASINO_CREDENTIALS: "true",
+    NINEWICKET_SECRET: secret,
+  });
+assert.equal(disabledSharedCallbackSecret, "");
+assert.throws(
+  () => requireSoftApiSecret(disabledSharedCallbackSecret),
+  /exactly 32 UTF-8 bytes/,
+  "the shared secret fallback must remain gated on sandbox launch being enabled",
+);
 assert.throws(
   () => buildSoftApiLaunchRequest(
     { userId: 1001, balance: 0, gameUid: "11539" },
