@@ -3,6 +3,8 @@
 **Snapshot:** 2026-09-25 19:56 UTC
 **Source:** `http://128.140.100.85/api/global/client/game-data`
 
+**Scope note:** This file records the production state at the snapshot time. Later feature-branch code changes remove Oracle from generic game-launch dispatch and opt in only to mapped SoftAPI WORLD_92 games; those changes have not been deployed to production.
+
 ## Current launch routing
 
 | Route | Provider codes | Required launch configuration |
@@ -50,7 +52,7 @@ SOFTAPI_CURRENCY_CODE=BDT
 SOFTAPI_CALLBACK_ENCRYPTION_MODE=required
 ```
 
-`IGAMING_LAUNCH_URL`, `IGAMING_API_TOKEN`, `IGAMING_API_SECRET`, and `IGAMING_GAME_UID` are supported aliases. The existing SoftAPI adapter is intentionally **not wired into** `/api/game/launch`; it needs an explicit provider mapping and wallet-reconciliation policy before it can be used for Yellow Bat.
+`IGAMING_LAUNCH_URL`, `IGAMING_API_TOKEN`, `IGAMING_API_SECRET`, and `IGAMING_GAME_UID` are supported aliases by the standalone SoftAPI adapter. The repository now has an opt-in, **sandbox-only zero-balance** branch in `/api/game/launch`, controlled by `SOFTAPI_SANDBOX_*` settings and explicit provider/game mappings. It is not configured on production, and does not establish that the World Casino/NineWicket endpoint path, request payload, or game catalog matches the SoftAPI contract. Do not enable Yellow Bat or any provider through this branch without provider confirmation and without preserving its existing dedicated route.
 
 ## Live provider results
 

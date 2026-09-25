@@ -1,7 +1,22 @@
 import crypto from "node:crypto";
 
-export const resolveSoftApiSecret = (env = process.env) =>
-  String(env.SOFTAPI_SECRET || env.IGAMING_API_SECRET || "");
+export const resolveSoftApiSecret = (env = process.env) => {
+  const sandboxEnabled =
+    String(env.SOFTAPI_SANDBOX_LAUNCH_ENABLED || "").trim().toLowerCase() ===
+    "true";
+  const reuseWorldCasinoCredentials =
+    String(env.SOFTAPI_SANDBOX_REUSE_WORLD_CASINO_CREDENTIALS || "")
+      .trim()
+      .toLowerCase() === "true";
+  const sandboxSecret = sandboxEnabled
+    ? env.SOFTAPI_SANDBOX_SECRET ||
+      (reuseWorldCasinoCredentials
+        ? env.NINEWICKET_SECRET || env.WORLD_CASINO_SECRET
+        : "")
+    : "";
+
+  return String(sandboxSecret || env.SOFTAPI_SECRET || env.IGAMING_API_SECRET || "");
+};
 
 const requireSecret = (secret = resolveSoftApiSecret()) => {
   const value = String(secret || "");

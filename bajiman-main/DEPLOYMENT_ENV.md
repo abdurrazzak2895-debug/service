@@ -27,9 +27,9 @@ Root directory: `server`.
 | `PROVIDER_RELAY_KEY` | `<same-value-as-relay-RELAY_SHARED_SECRET>` | Server-side only. |
 | `OUTBOUND_PROXY_URL` | *(empty unless using a static HTTP proxy)* | Alternative to the relay; use `http://user:pass@STATIC_IP:PORT`. |
 
-`NINEWICKET_*` and `WORLD_CASINO_*` belong only to the existing 9Wicket transfer-wallet integration. SoftAPI/IGAMING uses separate variables below; do not reuse one provider's credentials for the other.
+`NINEWICKET_*` and `WORLD_CASINO_*` configure the existing 9Wicket transfer-wallet integration. SoftAPI/IGAMING launch settings are separate by default; the sandbox can reuse the existing token/secret only with `SOFTAPI_SANDBOX_REUSE_WORLD_CASINO_CREDENTIALS=true` and provider confirmation that the same credentials are accepted for the SoftAPI launch contract. A shared token/secret does not establish that the endpoint path or payload format is compatible.
 
-### Optional SoftAPI / IGAMING integration (not live-configured)
+### Optional SoftAPI / IGAMING integration
 
 | Key | Value | Notes |
 |-----|-------|-------|
@@ -42,7 +42,27 @@ Root directory: `server`.
 | `SOFTAPI_CURRENCY_CODE` | `BDT` | The player's play currency as accepted by the account. |
 | `SOFTAPI_CALLBACK_ENCRYPTION_MODE` | `required` | Default. Set to `optional` only if the provider account sends plaintext callbacks (`enc=0`). |
 
-The isolated SoftAPI callback stores notify-only events in `softapi_callback_events` and never changes `User.balance`. The launch adapter is a server-side service; it is not wired into `/api/game/launch` until the exact account URL, provider/catalog mapping, and wallet synchronization policy are confirmed.
+The isolated SoftAPI callback stores notify-only events in `softapi_callback_events` and never changes `User.balance`. When sandbox launch is enabled, it uses `SOFTAPI_SANDBOX_SECRET`, or the existing NineWicket/World Casino secret only when shared-credential reuse is explicitly enabled.
+
+#### Sandbox-only `/api/game/launch` dispatch
+
+The repository has an opt-in, zero-balance SoftAPI dispatch path for controlled sandbox testing. It is disabled by default, uses a separate sandbox credential namespace, requires explicit provider-code and per-game mappings, and always sends `balance: 0`. Configure **sandbox-only** account credentials and endpoint here; never point these variables at production funds or production game accounts.
+
+| Key | Value | Notes |
+|-----|-------|-------|
+| `SOFTAPI_SANDBOX_LAUNCH_ENABLED` | `true` | Must be explicitly enabled for the sandbox dispatch branch; default is disabled. |
+| `SOFTAPI_SANDBOX_PROVIDER_CODES` | `WORLD_92` | Only YGRGaming (SoftAPI brand ID `92`) is mapped here. 9Wicket and Yellow Bat dedicated handlers retain priority; Oracle is no longer used by the generic game-launch dispatcher. |
+| `SOFTAPI_SANDBOX_GAME_UID_MAP` | *(leave unset to use checked-in map)* | Defaults to `server/config/softapi-sandbox-game-uid-map.json`, containing only exact title/code matches verified against the public SoftAPI catalog. Explicit env JSON overrides the file. Unmapped games fail closed. |
+| `SOFTAPI_SANDBOX_TOKEN` | `<sandbox-account-token>` | Optional dedicated sandbox token. If omitted, the `NINEWICKET_*`/`WORLD_CASINO_*` token is reused only when the flag below is `true`. |
+| `SOFTAPI_SANDBOX_SECRET` | `<exactly-32-byte-sandbox-secret>` | Optional dedicated sandbox secret. If omitted, the `NINEWICKET_*`/`WORLD_CASINO_*` secret is reused only when the flag below is `true`. |
+| `SOFTAPI_SANDBOX_REUSE_WORLD_CASINO_CREDENTIALS` | `false` | Default. Set to `true` only when the provider confirms the existing World Casino/NineWicket token and secret are valid for the SoftAPI launch contract. |
+| `SOFTAPI_SANDBOX_LAUNCH_URL` | `<sandbox-account-specific-HTTPS-launch-URL>` | Preferred. If blank and same-account reuse is explicitly enabled, use `NINEWICKET_LAUNCH_URL`, then `NINEWICKET_API_BASE`/`WORLD_CASINO_API_URL` verbatim. Do not append or guess a path; use the provider-confirmed launch endpoint. |
+| `SOFTAPI_SANDBOX_CALLBACK_URL` | `https://<backend-domain>/api/softapi/callback` | The existing encrypted notify-only receiver. |
+| `SOFTAPI_SANDBOX_RETURN_URL` | `https://<client-domain>/lobby` | Public HTTPS lobby URL. |
+| `SOFTAPI_SANDBOX_CURRENCY_CODE` | `BDT` | Must be enabled for the sandbox account. |
+| `SOFTAPI_SANDBOX_LANGUAGE` | `en` | Optional; defaults to `en`. |
+
+This branch is not real-money settlement. The checked-in map contains 85 exact WORLD_92/YGRGaming matches; 15 local records remain unmapped. WORLD_133/KA and all other providers are not allow-listed. Do not enable production launch traffic until the account-specific launch URL and credentials, wallet model, reconciliation policy, and required security checks have been separately verified. The Oracle catalog/image utilities are retained; only Oracle launch dispatch is removed.
 
 ## 2) CLIENT project (`bajiman-client-one`)
 
