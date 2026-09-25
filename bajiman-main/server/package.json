@@ -11,6 +11,7 @@
     "test:softapi-integration": "node scripts/testSoftApiIntegration.js",
     "test:softapi-payload": "node scripts/testSoftApiPayload.js",
     "test:world-casino-mock": "node scripts/testWorldCasinoApiMock.js",
+    "test:world-casino-launch-dry-run": "node scripts/testWorldCasinoLaunchDryRun.js",
     "test:live-world-launch": "node scripts/testLiveWorldLaunch.js",
     "test:launch-routing": "node scripts/testGameLaunchRouting.js",
     "test:oracle-launch": "node scripts/testOracleLaunch.js"
