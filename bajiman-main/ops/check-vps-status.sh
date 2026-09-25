@@ -14,6 +14,7 @@ Connects with SSH and runs only:
   sudo -n /usr/local/sbin/vps-status-readonly
 
 The remote helper must be root-owned and installed with a matching narrow sudoers rule.
+This wrapper uses authenticated SSH only; it makes no HTTP request to the VPS website.
 USAGE
 }
 
@@ -35,6 +36,7 @@ if [[ ! "$user" =~ ^[a-z_][a-z0-9_-]*\$?$ ]]; then
 fi
 
 ssh_args=(
+  -T
   -o BatchMode=yes
   -o ConnectTimeout=10
   -o IdentitiesOnly=yes
