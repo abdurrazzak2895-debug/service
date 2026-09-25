@@ -20,6 +20,14 @@ const ORACLE_GAME_API_BASE =
 
 const ORACLE_GAME_DATA_KEY = process.env.ORACLE_GAME_DATA_KEY || "";
 
+const oracleProviderCodes = () =>
+  new Set(
+    String(process.env.ORACLE_PROVIDER_CODES || "WORLD_92,WORLD_133")
+      .split(",")
+      .map((value) => value.trim().toUpperCase())
+      .filter(Boolean),
+  );
+
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 const buildFileUrl = (req, filePath = "") => {
@@ -204,9 +212,12 @@ const formatSport = (req, item) => {
 const attachOracleDataToGames = async (req, games = []) => {
   if (!Array.isArray(games) || games.length === 0) return [];
 
+  const configuredOracleCodes = oracleProviderCodes();
   const providerCodes = [
     ...new Set(
-      games.map((game) => game?.providerDbId?.providerCode).filter(Boolean),
+      games
+        .map((game) => String(game?.providerDbId?.providerCode || "").toUpperCase())
+        .filter((providerCode) => configuredOracleCodes.has(providerCode)),
     ),
   ];
 
