@@ -123,9 +123,11 @@ const inspectCatalogReadOnly = async () => {
     ? response.data
     : Array.isArray(response.data?.data)
       ? response.data.data
-      : Array.isArray(response.data?.providers)
-        ? response.data.providers
-        : [];
+      : Array.isArray(response.data?.data?.providers)
+        ? response.data.data.providers
+        : Array.isArray(response.data?.providers)
+          ? response.data.providers
+          : [];
   console.log(
     JSON.stringify(
       {
